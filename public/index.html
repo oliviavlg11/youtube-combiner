@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YouTube Combiner</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>YouTube Combiner</h1>
+    <div class="subtitle">MP3 playlist + looping video &rarr; YouTube-ready MP4</div>
+  </div>
+</header>
+
+<main class="layout">
+
+  <!-- Left: Audio Playlist -->
+  <div class="panel">
+    <div class="panel-header">
+      <h2>Audio Playlist</h2>
+      <span id="track-count" style="color:var(--text-muted);font-size:12px">0 tracks</span>
+    </div>
+    <div class="panel-body">
+
+      <div class="drop-zone" id="audio-drop-zone">
+        <input type="file" id="audio-input" accept=".mp3,.wav,.aac,.m4a,.ogg" multiple>
+        <div class="icon">&#127925;</div>
+        <strong>Drop MP3 files here</strong>
+        <p>or click to browse &mdash; MP3, WAV, AAC, M4A, OGG</p>
+      </div>
+
+      <ul class="playlist" id="playlist"></ul>
+
+      <div class="loop-controls">
+        <div class="loop-row">
+          <label for="loop-toggle">Loop playlist</label>
+          <label class="toggle">
+            <input type="checkbox" id="loop-toggle">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="loop-count-row" id="loop-count-row">
+          <label for="loop-count">Number of loops</label>
+          <div class="loop-count-input">
+            <button class="loop-count-btn" id="loop-count-dec">&#8722;</button>
+            <span id="loop-count-display">2</span>
+            <button class="loop-count-btn" id="loop-count-inc">&#43;</button>
+            <input type="hidden" id="loop-count" value="2">
+          </div>
+        </div>
+      </div>
+
+      <div class="playlist-total" id="playlist-total" style="display:none">
+        Total duration: <span id="total-duration">0:00</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Right: Video + Export -->
+  <div style="display:flex;flex-direction:column;gap:16px">
+
+    <!-- Video -->
+    <div class="panel">
+      <div class="panel-header">
+        <h2>Background Video</h2>
+      </div>
+      <div class="panel-body">
+
+        <div class="drop-zone" id="video-drop-zone">
+          <input type="file" id="video-input" accept=".mp4,.mov,.mkv,.webm,.avi">
+          <div class="icon">&#127916;</div>
+          <strong>Drop video file here</strong>
+          <p>or click to browse &mdash; MP4, MOV, MKV, WebM</p>
+        </div>
+
+        <div class="video-preview" id="video-preview">
+          <button class="video-remove" id="video-remove-btn">&#x2715; Remove</button>
+          <video id="video-player" loop muted playsinline></video>
+          <div class="video-meta" id="video-meta"></div>
+        </div>
+
+        <div id="video-warning" class="warning" style="display:none"></div>
+
+      </div>
+    </div>
+
+    <!-- Export -->
+    <div class="panel">
+      <div class="panel-header">
+        <h2>Export</h2>
+      </div>
+      <div class="panel-body">
+
+        <div class="settings-grid">
+          <div class="field">
+            <label>Resolution</label>
+            <select id="resolution">
+              <option value="1920x1080" selected>1080p (1920x1080)</option>
+              <option value="1280x720">720p (1280x720)</option>
+              <option value="3840x2160">4K (3840x2160)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Frame rate</label>
+            <select id="fps">
+              <option value="30" selected>30 fps</option>
+              <option value="24">24 fps</option>
+              <option value="60">60 fps</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Video bitrate: <span id="vbitrate-label">8000k</span></label>
+            <input type="range" id="video-bitrate" min="2000" max="20000" step="500" value="8000">
+          </div>
+          <div class="field">
+            <label>Audio bitrate</label>
+            <select id="audio-bitrate">
+              <option value="128k">128k</option>
+              <option value="192k" selected>192k</option>
+              <option value="320k">320k</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="loop-row" style="margin-bottom:12px">
+          <label for="hw-accel" style="font-size:13px">Hardware acceleration (macOS)</label>
+          <label class="toggle">
+            <input type="checkbox" id="hw-accel">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <button class="btn btn-primary" id="export-btn" disabled>Export MP4</button>
+
+        <div class="progress-section" id="progress-section">
+          <div class="progress-stage">
+            <span id="stage-label">Starting...</span>
+            <span id="pct-label">0%</span>
+          </div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar" id="progress-bar"></div>
+          </div>
+          <div class="export-actions" id="export-actions"></div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<script src="/js/app.js"></script>
+<script src="/js/playlist.js"></script>
+<script src="/js/videoPanel.js"></script>
+<script src="/js/exportPanel.js"></script>
+
+</body>
+</html>
