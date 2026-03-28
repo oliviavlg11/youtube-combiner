@@ -1,6 +1,20 @@
 const express = require('express');
 const path = require('path');
+const ffmpeg = require('fluent-ffmpeg');
 const { cleanUploadsOnStart, killOrphanedFfmpeg } = require('./utils/cleanup');
+
+// Tell fluent-ffmpeg where to find the binaries on Linux (Railway/Nix)
+const { execSync } = require('child_process');
+try {
+  const ffmpegPath = execSync('which ffmpeg').toString().trim();
+  const ffprobePath = execSync('which ffprobe').toString().trim();
+  if (ffmpegPath) ffmpeg.setFfmpegPath(ffmpegPath);
+  if (ffprobePath) ffmpeg.setFfprobePath(ffprobePath);
+  console.log('ffmpeg:', ffmpegPath);
+  console.log('ffprobe:', ffprobePath);
+} catch (e) {
+  console.warn('Could not auto-detect ffmpeg path:', e.message);
+}
 
 // Kill any ffmpeg processes left over from a previous crashed session
 killOrphanedFfmpeg();
