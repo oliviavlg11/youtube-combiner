@@ -38,6 +38,7 @@ function concatAudio(tracks, settings, onProgress) {
       .audioBitrate(audioBitrate)
       .audioFrequency(44100)
       .audioChannels(2)
+      .outputOptions(['-threads 2'])
       .output(outputPath)
       .on('progress', p => onProgress && onProgress(p.percent || 0))
       .on('end', () => {

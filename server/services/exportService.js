@@ -104,7 +104,8 @@ function loopAndMux(job, video, audioPath, audioDuration, settings, outputPath) 
     const codec = useHardwareAccel ? 'h264_videotoolbox' : 'libx264';
     const codecOpts = useHardwareAccel
       ? ['-b:v', videoBitrate]
-      : ['-preset fast', '-crf 23'];
+      // ultrafast preset + threads limit = much lower memory usage on constrained servers
+      : ['-preset ultrafast', '-crf 23', '-threads 2'];
 
     const proc = ffmpeg()
       // Input 0: video (looped at demuxer level — no frame count limit)
