@@ -20,6 +20,7 @@ router.post('/audio', audioUpload.array('files', 50), async (req, res) => {
         id: uuidv4(),
         originalName: file.originalname,
         path: file.path,
+        filename: path.basename(file.path),
         duration: info.duration,
         size: info.size,
       };

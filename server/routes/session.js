@@ -40,7 +40,7 @@ router.put('/playlist', (req, res) => {
 
 // PUT /api/session/settings — update export settings
 router.put('/settings', (req, res) => {
-  const allowed = ['resolution', 'fps', 'videoBitrate', 'audioBitrate', 'useHardwareAccel'];
+  const allowed = ['resolution', 'fps', 'videoBitrate', 'audioBitrate', 'useHardwareAccel', 'format'];
   for (const key of allowed) {
     if (req.body[key] !== undefined) store.settings[key] = req.body[key];
   }

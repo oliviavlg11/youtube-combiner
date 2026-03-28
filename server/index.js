@@ -14,8 +14,9 @@ app.use(express.urlencoded({ extended: true }));
 // Serve static frontend
 app.use(express.static(path.join(__dirname, '../public')));
 
-// Serve uploaded videos for preview (audio files not needed in browser)
+// Serve uploaded files for preview
 app.use('/uploads/video', express.static(path.join(__dirname, '../uploads/video')));
+app.use('/uploads/audio', express.static(path.join(__dirname, '../uploads/audio')));
 
 // API routes
 app.use('/api/upload', require('./routes/upload'));
@@ -29,5 +30,5 @@ app.get('*', (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`\nYouTube Combiner running at http://localhost:${PORT}\n`);
+  console.log(`\nYT Playloop running at http://localhost:${PORT}\n`);
 });

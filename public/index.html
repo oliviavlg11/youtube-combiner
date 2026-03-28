@@ -3,15 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>YouTube Combiner</title>
+  <title>YT Playloop</title>
   <link rel="stylesheet" href="/css/styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Lobster&display=swap" rel="stylesheet">
 </head>
 <body>
 
 <header>
-  <div>
-    <h1>YouTube Combiner</h1>
-    <div class="subtitle">MP3 playlist + looping video &rarr; YouTube-ready MP4</div>
+  <div class="header-spacer"></div>
+  <div class="header-center">
+    <h1>YT Playloop</h1>
+    <div class="subtitle">Create. Loop. Export.</div>
+  </div>
+  <div class="header-spacer" style="display:flex;justify-content:flex-end">
+    <button id="theme-toggle" title="Toggle light/dark mode">
+      <span id="theme-icon">&#9788;</span>
+      <span id="theme-label">Light</span>
+    </button>
   </div>
 </header>
 
@@ -28,8 +36,9 @@
       <div class="drop-zone" id="audio-drop-zone">
         <input type="file" id="audio-input" accept=".mp3,.wav,.aac,.m4a,.ogg" multiple>
         <div class="icon">&#127925;</div>
-        <strong>Drop MP3 files here</strong>
-        <p>or click to browse &mdash; MP3, WAV, AAC, M4A, OGG</p>
+        <strong class="drop-text-desktop">Drop MP3 files here</strong>
+        <strong class="drop-text-mobile">Tap to browse</strong>
+        <p>MP3, WAV, AAC, M4A, OGG</p>
       </div>
 
       <ul class="playlist" id="playlist"></ul>
@@ -73,13 +82,26 @@
         <div class="drop-zone" id="video-drop-zone">
           <input type="file" id="video-input" accept=".mp4,.mov,.mkv,.webm,.avi">
           <div class="icon">&#127916;</div>
-          <strong>Drop video file here</strong>
-          <p>or click to browse &mdash; MP4, MOV, MKV, WebM</p>
+          <strong class="drop-text-desktop">Drop video file here</strong>
+          <strong class="drop-text-mobile">Tap to browse</strong>
+          <p>MP4, MOV, MKV, WebM</p>
         </div>
 
         <div class="video-preview" id="video-preview">
           <button class="video-remove" id="video-remove-btn">&#x2715; Remove</button>
           <video id="video-player" loop muted playsinline></video>
+          <div class="preview-play-btn" id="preview-play-btn">
+            <span id="preview-play-icon">&#9654;</span>
+          </div>
+          <div class="preview-track-label" id="preview-track-label"></div>
+          <div class="preview-seekbar" id="preview-seekbar">
+            <span id="preview-time-current">0:00</span>
+            <div class="seekbar-track" id="seekbar-track">
+              <div class="seekbar-fill" id="seekbar-fill"></div>
+              <div class="seekbar-thumb" id="seekbar-thumb"></div>
+            </div>
+            <span id="preview-time-total">0:00</span>
+          </div>
           <div class="video-meta" id="video-meta"></div>
         </div>
 
@@ -95,8 +117,22 @@
       </div>
       <div class="panel-body">
 
+        <!-- Format selector -->
+        <div class="format-tabs" id="format-tabs">
+          <button class="format-tab active" data-format="landscape">
+            <span class="format-icon">&#9646;&#9644;</span>
+            <span>YouTube</span>
+            <small>16:9 Landscape</small>
+          </button>
+          <button class="format-tab" data-format="portrait">
+            <span class="format-icon">&#9645;</span>
+            <span>TikTok / Instagram</span>
+            <small>9:16 Portrait</small>
+          </button>
+        </div>
+
         <div class="settings-grid">
-          <div class="field">
+          <div class="field" id="resolution-field">
             <label>Resolution</label>
             <select id="resolution">
               <option value="1920x1080" selected>1080p (1920x1080)</option>

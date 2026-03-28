@@ -127,6 +127,58 @@
     dragSrcId = null;
   });
 
+  // Touch drag-and-drop for mobile
+  let touchDragId = null;
+  let touchClone = null;
+
+  listEl.addEventListener('touchstart', e => {
+    const handle = e.target.closest('.drag-handle');
+    if (!handle) return;
+    const li = handle.closest('.playlist-item');
+    if (!li) return;
+    touchDragId = li.dataset.id;
+    li.classList.add('dragging');
+
+    // Create a floating clone
+    const rect = li.getBoundingClientRect();
+    touchClone = li.cloneNode(true);
+    touchClone.style.cssText = `position:fixed;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;opacity:0.85;pointer-events:none;z-index:999;border-radius:6px;`;
+    document.body.appendChild(touchClone);
+  }, { passive: true });
+
+  listEl.addEventListener('touchmove', e => {
+    if (!touchDragId || !touchClone) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    touchClone.style.top = `${touch.clientY - 20}px`;
+
+    // Highlight item under finger
+    document.querySelectorAll('.playlist-item').forEach(el => el.classList.remove('drag-target'));
+    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    const target = el && el.closest('.playlist-item');
+    if (target && target.dataset.id !== touchDragId) target.classList.add('drag-target');
+  }, { passive: false });
+
+  listEl.addEventListener('touchend', e => {
+    if (!touchDragId) return;
+    const touch = e.changedTouches[0];
+    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    const target = el && el.closest('.playlist-item');
+
+    if (target && target.dataset.id !== touchDragId) {
+      const srcIdx = appState.playlist.findIndex(t => t.id === touchDragId);
+      const tgtIdx = appState.playlist.findIndex(t => t.id === target.dataset.id);
+      const [item] = appState.playlist.splice(srcIdx, 1);
+      appState.playlist.splice(tgtIdx, 0, item);
+      render();
+      savePlaylistOrder();
+    }
+
+    document.querySelectorAll('.playlist-item').forEach(el => el.classList.remove('dragging', 'drag-target'));
+    if (touchClone) { touchClone.remove(); touchClone = null; }
+    touchDragId = null;
+  });
+
   // File input
   fileInput.addEventListener('change', () => {
     if (fileInput.files.length) uploadFiles(Array.from(fileInput.files));

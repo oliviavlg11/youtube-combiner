@@ -21,8 +21,38 @@
     cancelled: 'Cancelled',
   };
 
+  const PORTRAIT_RESOLUTIONS = [
+    { value: '1080x1920', label: '1080p (1080x1920)' },
+    { value: '720x1280',  label: '720p (720x1280)'   },
+  ];
+  const LANDSCAPE_RESOLUTIONS = [
+    { value: '1920x1080', label: '1080p (1920x1080)' },
+    { value: '1280x720',  label: '720p (1280x720)'   },
+    { value: '3840x2160', label: '4K (3840x2160)'    },
+  ];
+
+  let currentFormat = 'landscape';
   let currentJobId = null;
   let eventSource = null;
+
+  // Format tabs
+  document.querySelectorAll('.format-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.format-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      currentFormat = tab.dataset.format;
+      updateResolutionOptions(currentFormat);
+      saveSettings();
+    });
+  });
+
+  function updateResolutionOptions(format) {
+    const options = format === 'portrait' ? PORTRAIT_RESOLUTIONS : LANDSCAPE_RESOLUTIONS;
+    resolutionSel.innerHTML = options.map((o, i) =>
+      `<option value="${o.value}"${i === 0 ? ' selected' : ''}>${o.label}</option>`
+    ).join('');
+    window.dispatchEvent(new CustomEvent('format-changed', { detail: { format } }));
+  }
 
   // Update bitrate label
   vbitrateRange.addEventListener('input', () => {
@@ -44,6 +74,7 @@
         videoBitrate: `${vbitrateRange.value}k`,
         audioBitrate: audioBitrateSel.value,
         useHardwareAccel: hwAccelToggle.checked,
+        format: currentFormat,
       }),
     }).catch(() => {});
   }
@@ -84,14 +115,30 @@
       if (data.stage === 'done') {
         eventSource.close();
         exportActions.innerHTML = `
-          <a class="btn btn-success" href="/api/export/download/${jobId}" download="youtube-export.mp4">
-            Download MP4
-          </a>
-          <button class="btn btn-secondary" id="new-export-btn">New Export</button>
+          <div class="filename-row">
+            <input type="text" id="filename-input" class="filename-input" value="my-video" placeholder="File name" spellcheck="false">
+            <span class="filename-ext">.mp4</span>
+          </div>
+          <div class="filename-btns">
+            <a class="btn btn-success" id="download-btn" href="/api/export/download/${jobId}">
+              Download MP4
+            </a>
+            <button class="btn btn-secondary" id="new-export-btn">New Export</button>
+          </div>
         `;
+        const downloadBtn = document.getElementById('download-btn');
+        const filenameInput = document.getElementById('filename-input');
+
+        function updateDownloadName() {
+          const name = filenameInput.value.trim() || 'my-video';
+          downloadBtn.setAttribute('download', `${name}.mp4`);
+        }
+        updateDownloadName();
+        filenameInput.addEventListener('input', updateDownloadName);
+
         document.getElementById('new-export-btn').addEventListener('click', resetExport);
         exportBtn.disabled = false;
-        showToast('Export complete! Your file is ready to download.');
+        showToast('Export complete! Name your file and download.');
       }
 
       if (data.stage === 'error') {
@@ -139,6 +186,13 @@
   // Restore settings from session
   window.addEventListener('session-loaded', e => {
     const s = e.detail.settings || {};
+    if (s.format && s.format === 'portrait') {
+      currentFormat = 'portrait';
+      document.querySelectorAll('.format-tab').forEach(t => {
+        t.classList.toggle('active', t.dataset.format === 'portrait');
+      });
+      updateResolutionOptions('portrait');
+    }
     if (s.resolution) resolutionSel.value = s.resolution;
     if (s.fps) fpsSel.value = String(s.fps);
     if (s.videoBitrate) {

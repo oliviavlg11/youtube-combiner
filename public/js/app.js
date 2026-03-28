@@ -1,3 +1,25 @@
+// Theme toggle
+(function() {
+  const btn = document.getElementById('theme-toggle');
+  const icon = document.getElementById('theme-icon');
+  const label = document.getElementById('theme-label');
+  const saved = localStorage.getItem('theme') || 'dark';
+
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme === 'light' ? 'light' : '');
+    icon.textContent = theme === 'light' ? '\u263D' : '\u2600';
+    label.textContent = theme === 'light' ? 'Dark' : 'Light';
+    localStorage.setItem('theme', theme);
+  }
+
+  applyTheme(saved);
+
+  btn.addEventListener('click', () => {
+    const current = localStorage.getItem('theme') || 'dark';
+    applyTheme(current === 'dark' ? 'light' : 'dark');
+  });
+})();
+
 // Global state (mirrors server session)
 window.appState = {
   playlist: [],  // { id, originalName, duration }
