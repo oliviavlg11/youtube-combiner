@@ -1,20 +1,15 @@
 const express = require('express');
 const path = require('path');
 const ffmpeg = require('fluent-ffmpeg');
+const ffmpegStatic = require('ffmpeg-static');
+const ffprobeInstaller = require('@ffprobe-installer/ffprobe');
 const { cleanUploadsOnStart, killOrphanedFfmpeg } = require('./utils/cleanup');
 
-// Tell fluent-ffmpeg where to find the binaries on Linux (Railway/Nix)
-const { execSync } = require('child_process');
-try {
-  const ffmpegPath = execSync('which ffmpeg').toString().trim();
-  const ffprobePath = execSync('which ffprobe').toString().trim();
-  if (ffmpegPath) ffmpeg.setFfmpegPath(ffmpegPath);
-  if (ffprobePath) ffmpeg.setFfprobePath(ffprobePath);
-  console.log('ffmpeg:', ffmpegPath);
-  console.log('ffprobe:', ffprobePath);
-} catch (e) {
-  console.warn('Could not auto-detect ffmpeg path:', e.message);
-}
+// Use bundled binaries — works on any platform including Railway
+ffmpeg.setFfmpegPath(ffmpegStatic);
+ffmpeg.setFfprobePath(ffprobeInstaller.path);
+console.log('ffmpeg:', ffmpegStatic);
+console.log('ffprobe:', ffprobeInstaller.path);
 
 // Kill any ffmpeg processes left over from a previous crashed session
 killOrphanedFfmpeg();
