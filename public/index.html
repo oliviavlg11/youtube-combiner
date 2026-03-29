@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>YT Playloop</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="stylesheet" href="/css/styles.css">
   <link href="https://fonts.googleapis.com/css2?family=Lobster&display=swap" rel="stylesheet">
 </head>
@@ -90,6 +91,7 @@
         <div class="video-preview" id="video-preview">
           <button class="video-remove" id="video-remove-btn">&#x2715; Remove</button>
           <video id="video-player" loop muted playsinline></video>
+          <canvas id="viz-canvas" class="viz-canvas"></canvas>
           <div class="preview-play-btn" id="preview-play-btn">
             <span id="preview-play-icon">&#9654;</span>
           </div>
@@ -162,12 +164,60 @@
           </div>
         </div>
 
+        <!-- Visualizer -->
+        <div class="viz-section">
+          <div class="viz-header">
+            <label class="viz-label">Visualizer</label>
+            <select id="viz-type">
+              <option value="none">None</option>
+              <option value="waveform">Waveform</option>
+              <option value="bars">Frequency Bars</option>
+              <option value="spectrum">Spectrum</option>
+            </select>
+          </div>
+          <div id="viz-options" class="viz-options">
+            <div class="viz-opts-grid">
+              <div class="field">
+                <label>Color</label>
+                <input type="color" id="viz-color" value="#e53935">
+              </div>
+              <div class="field">
+                <label>Position</label>
+                <select id="viz-position">
+                  <option value="bottom">Bottom</option>
+                  <option value="top">Top</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Opacity: <span id="viz-opacity-label">60%</span></label>
+                <input type="range" id="viz-opacity" min="10" max="100" step="5" value="60">
+              </div>
+              <div class="field">
+                <label>Height: <span id="viz-height-label">20%</span></label>
+                <input type="range" id="viz-height" min="10" max="50" step="5" value="20">
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="loop-row" style="margin-bottom:12px">
           <label for="hw-accel" style="font-size:13px">Hardware acceleration (macOS)</label>
           <label class="toggle">
             <input type="checkbox" id="hw-accel">
             <span class="toggle-slider"></span>
           </label>
+        </div>
+
+        <!-- Presets -->
+        <div class="presets-section">
+          <div class="presets-row">
+            <select id="preset-select" class="preset-select">
+              <option value="">— Saved presets —</option>
+            </select>
+            <button class="btn-icon" id="preset-load-btn" title="Load preset" disabled>&#10227;</button>
+            <button class="btn-icon btn-icon-danger" id="preset-delete-btn" title="Delete preset" disabled>&#10005;</button>
+          </div>
+          <button class="btn btn-secondary btn-sm" id="preset-save-btn">Save as Preset…</button>
         </div>
 
         <button class="btn btn-primary" id="export-btn" disabled>Export MP4</button>
@@ -195,6 +245,8 @@
 <script src="/js/playlist.js"></script>
 <script src="/js/videoPanel.js"></script>
 <script src="/js/exportPanel.js"></script>
+<script src="/js/visualizer.js"></script>
+<script src="/js/presets.js"></script>
 
 </body>
 </html>

@@ -1,15 +1,29 @@
 const express = require('express');
 const router = express.Router();
 const store = require('../utils/sessionStore');
+const { getJob } = require('../services/exportService');
 
 // GET /api/session — get current state
 router.get('/', (req, res) => {
   const totalDuration = store.playlist.reduce((s, t) => s + t.duration, 0);
+
+  // Surface any in-progress export so the client can reconnect after a page reload
+  let activeExport = null;
+  if (store.activeJob) {
+    const job = getJob(store.activeJob);
+    if (job && !['done', 'error', 'cancelled'].includes(job.stage)) {
+      activeExport = { jobId: store.activeJob, stage: job.stage, percent: job.percent };
+    } else {
+      store.activeJob = null; // stale reference (e.g. after server restart)
+    }
+  }
+
   res.json({
     playlist: store.playlist,
     video: store.video,
     settings: store.settings,
     totalDuration,
+    activeExport,
   });
 });
 
@@ -40,7 +54,7 @@ router.put('/playlist', (req, res) => {
 
 // PUT /api/session/settings — update export settings
 router.put('/settings', (req, res) => {
-  const allowed = ['resolution', 'fps', 'videoBitrate', 'audioBitrate', 'useHardwareAccel', 'format'];
+  const allowed = ['resolution', 'fps', 'videoBitrate', 'audioBitrate', 'useHardwareAccel', 'format', 'visualizer', 'vizColor', 'vizOpacity', 'vizPosition', 'vizHeight'];
   for (const key of allowed) {
     if (req.body[key] !== undefined) store.settings[key] = req.body[key];
   }

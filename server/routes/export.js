@@ -52,15 +52,24 @@ router.get('/download/:jobId', (req, res) => {
     return res.status(404).json({ error: 'Output file missing' });
   }
   const stat = fs.statSync(job.outputPath);
+  const rawName = (req.query.filename || 'my-video').replace(/[^a-zA-Z0-9_\- ]/g, '');
+  const filename = `${rawName || 'my-video'}.mp4`;
   res.setHeader('Content-Type', 'video/mp4');
   res.setHeader('Content-Length', stat.size);
-  res.setHeader('Content-Disposition', 'attachment; filename="youtube-export.mp4"');
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
   const stream = fs.createReadStream(job.outputPath);
   stream.pipe(res);
   stream.on('close', () => {
     // Clean up after download
     try { fs.unlinkSync(job.outputPath); } catch (_) {}
   });
+});
+
+// DELETE /api/export/active — force-cancel whatever is currently running (no jobId needed)
+router.delete('/active', (req, res) => {
+  if (store.activeJob) cancelJob(store.activeJob);
+  store.activeJob = null;
+  res.json({ success: true });
 });
 
 // DELETE /api/export/:jobId — cancel in-progress export

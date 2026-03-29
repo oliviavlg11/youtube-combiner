@@ -20,11 +20,16 @@
 
   function updateTotal() {
     const tracks = appState.playlist;
-    if (!tracks.length) { totalEl.style.display = 'none'; return; }
     const singlePass = tracks.reduce((s, t) => s + t.duration, 0);
     const multiplier = loopToggle.checked ? getLoopCount() : 1;
-    totalDurEl.textContent = formatDuration(singlePass * multiplier);
-    totalEl.style.display = 'flex';
+    const total = singlePass * multiplier;
+    if (tracks.length) {
+      totalDurEl.textContent = formatDuration(total);
+      totalEl.style.display = 'flex';
+    } else {
+      totalEl.style.display = 'none';
+    }
+    window.dispatchEvent(new CustomEvent('playlist-duration-changed', { detail: { total } }));
   }
 
   function render() {

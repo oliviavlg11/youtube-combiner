@@ -80,7 +80,7 @@ async function startExport(jobId, playlist, video, settings) {
 
 /**
  * Loop the video and mux with audio in a single FFmpeg pass.
- * Much faster than encoding an intermediate looped video file.
+ * Supports optional audio visualizer overlay via filter_complex.
  */
 function loopAndMux(job, video, audioPath, audioDuration, settings, outputPath) {
   return new Promise((resolve, reject) => {
@@ -89,12 +89,17 @@ function loopAndMux(job, video, audioPath, audioDuration, settings, outputPath) 
       fps = 30,
       videoBitrate = '8000k',
       useHardwareAccel = false,
+      visualizer = 'none',
+      vizColor = '#e53935',
+      vizOpacity = 0.6,
+      vizPosition = 'bottom',
+      vizHeight = 20,
     } = settings;
 
     const [targetW, targetH] = resolution.split('x').map(Number);
 
     // Scale/pad to target resolution, normalize to CFR
-    const vf = [
+    const baseVf = [
       `scale=${targetW}:${targetH}:force_original_aspect_ratio=decrease`,
       `pad=${targetW}:${targetH}:(ow-iw)/2:(oh-ih)/2:black`,
       `fps=${fps}`,
@@ -107,6 +112,32 @@ function loopAndMux(job, video, audioPath, audioDuration, settings, outputPath) 
       // ultrafast preset + threads limit = much lower memory usage on constrained servers
       : ['-preset ultrafast', '-crf 23', '-threads 2'];
 
+    // Build filter + map args: simple -vf or -filter_complex when viz is enabled
+    let filterAndMapOpts;
+    if (visualizer !== 'none') {
+      const vizPx = Math.max(20, Math.round(targetH * (Math.min(50, Math.max(10, Number(vizHeight))) / 100)));
+      const hex = String(vizColor || '#e53935').replace('#', '').slice(0, 6);
+      const yPos = vizPosition === 'top' ? '0' : `${targetH - vizPx}`;
+      const alpha = Math.min(1, Math.max(0, Number(vizOpacity) || 0.6)).toFixed(2);
+      const bgAlpha = (Math.min(1, Math.max(0, Number(vizOpacity) || 0.6)) * 0.45).toFixed(2);
+
+      let vizFilter;
+      if (visualizer === 'waveform') {
+        // mode=line draws sparse vertical bars; n=4096 spreads them out with bigger gaps
+        vizFilter = `[1:a]showwaves=s=${targetW}x${vizPx}:mode=line:rate=15:n=4096:colors=0x${hex}@${alpha}:bgcolor=black@${bgAlpha}[viz]`;
+      } else if (visualizer === 'bars') {
+        vizFilter = `[1:a]showfreqs=s=${targetW}x${vizPx}:mode=bar:colors=0x${hex}@${alpha}:bgcolor=black@${bgAlpha}[viz]`;
+      } else {
+        // spectrum
+        vizFilter = `[1:a]showcqt=size=${targetW}x${vizPx}:bgcolor=black@${bgAlpha}[viz]`;
+      }
+
+      const fc = `[0:v]${baseVf}[scaled];${vizFilter};[scaled][viz]overlay=0:${yPos}[vout]`;
+      filterAndMapOpts = ['-filter_complex', fc, '-map', '[vout]', '-map', '1:a:0'];
+    } else {
+      filterAndMapOpts = ['-vf', baseVf, '-map', '0:v:0', '-map', '1:a:0'];
+    }
+
     const proc = ffmpeg()
       // Input 0: video (looped at demuxer level — no frame count limit)
       .input(video.path)
@@ -116,14 +147,12 @@ function loopAndMux(job, video, audioPath, audioDuration, settings, outputPath) 
       .videoCodec(codec)
       .audioCodec('copy')
       .outputOptions([
+        ...filterAndMapOpts,
         ...codecOpts,
         '-pix_fmt yuv420p',
-        '-map 0:v:0',
-        '-map 1:a:0',
         '-shortest',            // stop at end of audio
         '-movflags +faststart',
       ])
-      .videoFilter(vf)
       .output(outputPath)
       .on('start', () => { job.ffmpegProc = proc; })
       .on('progress', p => {

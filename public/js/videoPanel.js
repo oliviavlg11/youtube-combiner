@@ -21,11 +21,19 @@
   let trackStartTime = 0; // elapsed audio time before the current track
   let isPlaying = false;
   let isSeeking = false;
+  let playlistTotalDuration = 0; // kept in sync via playlist-duration-changed
+
+  window.addEventListener('playlist-duration-changed', ({ detail: { total } }) => {
+    playlistTotalDuration = total;
+    // Refresh the seekbar total label immediately
+    if (!isPlaying) updateSeekbar(audioPosition());
+    timeTotal.textContent = formatDuration(playlistTotalDuration || (playerEl.duration || 0));
+  });
 
   // ── Helpers ──────────────────────────────────────────
 
   function totalAudioDuration() {
-    return appState.playlist.reduce((s, t) => s + t.duration, 0);
+    return playlistTotalDuration || appState.playlist.reduce((s, t) => s + t.duration, 0);
   }
 
   // Current elapsed position in the full audio timeline
@@ -56,6 +64,7 @@
     previewEl.classList.toggle('playing', val);
     playIcon.textContent = val ? '\u23F8' : '\u25B6';
     if (!val) trackLabel.textContent = '';
+    window.dispatchEvent(new CustomEvent('viz-playback', { detail: { playing: val } }));
   }
 
   function stopAudio() {
@@ -82,6 +91,7 @@
     audioEl.currentTime = offset || 0;
     audioEl.volume = 1;
     trackLabel.textContent = track.originalName;
+    window.dispatchEvent(new CustomEvent('audio-element-created', { detail: { audioEl } }));
     if (isPlaying) audioEl.play().catch(() => {});
 
     audioEl.onended = () => {
@@ -116,8 +126,7 @@
   });
 
   playerEl.addEventListener('loadedmetadata', () => {
-    const total = totalAudioDuration() || playerEl.duration || 0;
-    timeTotal.textContent = formatDuration(total);
+    timeTotal.textContent = formatDuration(totalAudioDuration() || playerEl.duration || 0);
   });
 
   function seekToPercent(pct) {
@@ -281,5 +290,12 @@
 
   window.addEventListener('format-changed', e => {
     previewEl.classList.toggle('portrait', e.detail.format === 'portrait');
+  });
+
+  // visualizer.js asks for the current audio element when viz is enabled mid-playback
+  window.addEventListener('request-audio-element', () => {
+    if (audioEl) {
+      window.dispatchEvent(new CustomEvent('audio-element-created', { detail: { audioEl } }));
+    }
   });
 })();
