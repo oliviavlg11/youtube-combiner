@@ -119,17 +119,15 @@ function loopAndMux(job, video, audioPath, audioDuration, settings, outputPath) 
       const hex = String(vizColor || '#e53935').replace('#', '').slice(0, 6);
       const yPos = vizPosition === 'top' ? '0' : `${targetH - vizPx}`;
       const alpha = Math.min(1, Math.max(0, Number(vizOpacity) || 0.6)).toFixed(2);
-      const bgAlpha = (Math.min(1, Math.max(0, Number(vizOpacity) || 0.6)) * 0.45).toFixed(2);
 
       let vizFilter;
       if (visualizer === 'waveform') {
-        // mode=line draws sparse vertical bars; n=4096 spreads them out with bigger gaps
-        vizFilter = `[1:a]showwaves=s=${targetW}x${vizPx}:mode=line:rate=15:n=4096:colors=0x${hex}@${alpha}:bgcolor=black@${bgAlpha}[viz]`;
+        vizFilter = `[1:a]showwaves=s=${targetW}x${vizPx}:mode=line:rate=15:n=4096:colors=0x${hex}@${alpha}[viz]`;
       } else if (visualizer === 'bars') {
-        vizFilter = `[1:a]showfreqs=s=${targetW}x${vizPx}:mode=bar:colors=0x${hex}@${alpha}:bgcolor=black@${bgAlpha}[viz]`;
+        vizFilter = `[1:a]showfreqs=s=${targetW}x${vizPx}:mode=bar:colors=0x${hex}@${alpha}[viz]`;
       } else {
         // spectrum
-        vizFilter = `[1:a]showcqt=size=${targetW}x${vizPx}:bgcolor=black@${bgAlpha}[viz]`;
+        vizFilter = `[1:a]showcqt=size=${targetW}x${vizPx}[viz]`;
       }
 
       const fc = `[0:v]${baseVf}[scaled];${vizFilter};[scaled][viz]overlay=0:${yPos}[vout]`;
