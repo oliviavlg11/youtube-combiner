@@ -4,6 +4,7 @@ const ffmpeg = require('fluent-ffmpeg');
 const ffmpegStatic = require('ffmpeg-static');
 const ffprobeInstaller = require('@ffprobe-installer/ffprobe');
 const { cleanUploadsOnStart, killOrphanedFfmpeg } = require('./utils/cleanup');
+const { sessionMiddleware } = require('./middleware/session');
 
 // Use bundled binaries — works on any platform including Railway
 ffmpeg.setFfmpegPath(ffmpegStatic);
@@ -27,7 +28,8 @@ app.use(express.static(path.join(__dirname, '../public')));
 app.use('/uploads/video', express.static(path.join(__dirname, '../uploads/video')));
 app.use('/uploads/audio', express.static(path.join(__dirname, '../uploads/audio')));
 
-// API routes
+// API routes — gated by per-browser session cookie so each user has isolated state
+app.use('/api', sessionMiddleware);
 app.use('/api/upload', require('./routes/upload'));
 app.use('/api/session', require('./routes/session'));
 app.use('/api/export', require('./routes/export'));

@@ -3,11 +3,11 @@ const router = express.Router();
 const fs = require('fs');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
-const store = require('../utils/sessionStore');
 const { startExport, getJob, cancelJob } = require('../services/exportService');
 
 // POST /api/export — start export
 router.post('/', (req, res) => {
+  const store = req.store;
   if (!store.video) return res.status(400).json({ error: 'No video file uploaded' });
   if (store.playlist.length === 0) return res.status(400).json({ error: 'Playlist is empty' });
   if (store.activeJob) return res.status(409).json({ error: 'An export is already in progress' });
@@ -65,8 +65,9 @@ router.get('/download/:jobId', (req, res) => {
   });
 });
 
-// DELETE /api/export/active — force-cancel whatever is currently running (no jobId needed)
+// DELETE /api/export/active — force-cancel whatever is currently running for this user
 router.delete('/active', (req, res) => {
+  const store = req.store;
   if (store.activeJob) cancelJob(store.activeJob);
   store.activeJob = null;
   res.json({ success: true });
@@ -75,7 +76,7 @@ router.delete('/active', (req, res) => {
 // DELETE /api/export/:jobId — cancel in-progress export
 router.delete('/:jobId', (req, res) => {
   cancelJob(req.params.jobId);
-  store.activeJob = null;
+  req.store.activeJob = null;
   res.json({ success: true });
 });
 

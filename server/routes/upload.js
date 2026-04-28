@@ -4,7 +4,6 @@ const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const { audioUpload, videoUpload } = require('../middleware/multerConfig');
 const { probe } = require('../services/ffprobeService');
-const store = require('../utils/sessionStore');
 const { unlinkSilent } = require('../utils/cleanup');
 
 // POST /api/upload/audio — upload one or more audio files
@@ -13,6 +12,7 @@ router.post('/audio', audioUpload.array('files', 50), async (req, res) => {
     return res.status(400).json({ error: 'No files uploaded' });
   }
   try {
+    const store = req.store;
     const results = [];
     for (const file of req.files) {
       const info = await probe(file.path);
@@ -35,6 +35,7 @@ router.post('/audio', audioUpload.array('files', 50), async (req, res) => {
 
 // DELETE /api/upload/audio/:id — remove a track
 router.delete('/audio/:id', (req, res) => {
+  const store = req.store;
   const idx = store.playlist.findIndex(t => t.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Track not found' });
   const [removed] = store.playlist.splice(idx, 1);
@@ -46,6 +47,7 @@ router.delete('/audio/:id', (req, res) => {
 router.post('/video', videoUpload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
   try {
+    const store = req.store;
     // Remove previous video if any
     if (store.video) unlinkSilent(store.video.path);
 
@@ -69,6 +71,7 @@ router.post('/video', videoUpload.single('file'), async (req, res) => {
 
 // DELETE /api/upload/video — remove current video
 router.delete('/video', (req, res) => {
+  const store = req.store;
   if (store.video) {
     unlinkSilent(store.video.path);
     store.video = null;
