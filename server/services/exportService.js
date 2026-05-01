@@ -115,19 +115,48 @@ function loopAndMux(job, video, audioPath, audioDuration, settings, outputPath) 
     // Build filter + map args: simple -vf or -filter_complex when viz is enabled
     let filterAndMapOpts;
     if (visualizer !== 'none') {
-      const vizPx = Math.max(20, Math.round(targetH * (Math.min(50, Math.max(10, Number(vizHeight))) / 100)));
       const hex = String(vizColor || '#e53935').replace('#', '').slice(0, 6);
-      const yPos = vizPosition === 'top' ? '0' : `${targetH - vizPx}`;
       const alpha = Math.min(1, Math.max(0, Number(vizOpacity) || 0.6)).toFixed(2);
+
+      // Layout: position controls how tall the viz canvas is and where it overlays
+      const isFullscreen = vizPosition === 'fullscreen';
+      const vizW = targetW;
+      const vizH = isFullscreen
+        ? targetH
+        : Math.max(20, Math.round(targetH * (Math.min(50, Math.max(10, Number(vizHeight))) / 100)));
+
+      let yPos;
+      if (isFullscreen)             yPos = '0';
+      else if (vizPosition === 'top')      yPos = '0';
+      else if (vizPosition === 'centered') yPos = `(H-h)/2`;
+      else                                  yPos = `${targetH - vizH}`; // 'bottom'
 
       let vizFilter;
       if (visualizer === 'waveform') {
-        vizFilter = `[1:a]showwaves=s=${targetW}x${vizPx}:mode=line:rate=15:n=4096:colors=0x${hex}@${alpha}[viz]`;
+        // Premium waveform: smooth centered line + soft bloom halo via gblur.
+        // The halo scales with band height so it looks right at any size.
+        const bloomSigma = Math.max(6, Math.round(Math.min(vizH, vizW) * 0.04));
+        vizFilter = [
+          // Render the waveform on a black canvas, then key out black for transparency
+          `[1:a]showwaves=s=${vizW}x${vizH}:mode=cline:rate=30:n=2048:colors=0x${hex}:scale=lin,format=rgba,colorkey=color=0x000000:similarity=0.02:blend=0[wave_raw]`,
+          // Split the line: one stays sharp, the other gets blurred into a halo
+          `[wave_raw]split[wave_sharp][wave_for_bloom]`,
+          `[wave_for_bloom]gblur=sigma=${bloomSigma}[wave_bloom]`,
+          // Layer the sharp line on top of the bloom
+          `[wave_bloom][wave_sharp]overlay=0:0[wave_glow]`,
+          // Apply user-controlled opacity
+          `[wave_glow]colorchannelmixer=aa=${alpha}[viz]`,
+        ].join(';');
       } else if (visualizer === 'bars') {
-        vizFilter = `[1:a]showfreqs=s=${targetW}x${vizPx}:mode=bar:colors=0x${hex}@${alpha}[viz]`;
+        // Edge-to-edge bars with log-frequency + cube-root amplitude scale so
+        // bars actually use the whole width instead of jamming bass on the
+        // left. colorkey drops the black background, no UI container.
+        vizFilter = `[1:a]showfreqs=s=${vizW}x${vizH}:mode=bar:fscale=log:ascale=cbrt:colors=0x${hex},format=rgba,colorkey=color=0x000000:similarity=0.05:blend=0,colorchannelmixer=aa=${alpha}[viz]`;
       } else {
-        // spectrum
-        vizFilter = `[1:a]showcqt=size=${targetW}x${vizPx}[viz]`;
+        // spectrum — same edge-to-edge treatment.
+        // axis=0:text=0 strips the frequency-axis strip showcqt draws by default,
+        // which acts like a UI container at the bottom of the spectrum.
+        vizFilter = `[1:a]showcqt=size=${vizW}x${vizH}:axis=0:text=0,format=rgba,colorkey=color=0x000000:similarity=0.05:blend=0,colorchannelmixer=aa=${alpha}[viz]`;
       }
 
       const fc = `[0:v]${baseVf}[scaled];${vizFilter};[scaled][viz]overlay=0:${yPos}[vout]`;

@@ -24,9 +24,16 @@
     const [r,g,b] = hexToRgb(hex);
     return `rgba(${r},${g},${b},${alpha})`;
   }
-  // Returns the y offset for the viz band based on position setting
-  function bandY(bandH) {
-    return vizPosition === 'top' ? 0 : canvas.height - bandH;
+  // Returns the band rectangle (y, height) based on position setting.
+  // For 'fullscreen', the band fills the whole canvas.
+  function getBand() {
+    if (vizPosition === 'fullscreen') {
+      return { y: 0, h: canvas.height };
+    }
+    const h = Math.round(canvas.height * vizHeight);
+    if (vizPosition === 'top')      return { y: 0,                              h };
+    if (vizPosition === 'centered') return { y: Math.round((canvas.height - h) / 2), h };
+    return { y: canvas.height - h, h }; // 'bottom'
   }
 
   function ensureContext() {
@@ -56,9 +63,10 @@
     }
   }
 
-  // Resize canvas pixels to match the video element's rendered size
+  // Resize the bitmap to match the canvas's actual rendered CSS box.
+  // The canvas is pinned to inset:0 in CSS, so this is the full .video-preview.
   function resizeCanvas() {
-    const rect = videoEl.getBoundingClientRect();
+    const rect = canvas.getBoundingClientRect();
     const w = Math.round(rect.width);
     const h = Math.round(rect.height);
     if (w > 0 && h > 0 && (canvas.width !== w || canvas.height !== h)) {
@@ -136,24 +144,51 @@
     const data = new Uint8Array(analyser.fftSize);
     analyser.getByteTimeDomainData(data);
 
-    const h  = Math.round(canvas.height * vizHeight);
-    const y0 = bandY(h);
+    const { y: y0, h } = getBand();
+    const centerY = y0 + h / 2;
+    const amp = h * 0.42;
 
-    ctx.fillStyle = `rgba(0,0,0,${vizOpacity * 0.45})`;
-    ctx.fillRect(0, y0, canvas.width, h);
+    // Subtle dark wash behind the band — fades away from the wave for a cinematic
+    // edge. Skipped in fullscreen so the video shows through.
+    if (vizPosition !== 'fullscreen') {
+      const grad = ctx.createLinearGradient(0, y0, 0, y0 + h);
+      const dark = `rgba(0,0,0,${(vizOpacity * 0.55).toFixed(3)})`;
+      const transparent = 'rgba(0,0,0,0)';
+      if (vizPosition === 'top') {
+        grad.addColorStop(0, dark);
+        grad.addColorStop(1, transparent);
+      } else if (vizPosition === 'centered') {
+        grad.addColorStop(0, transparent);
+        grad.addColorStop(0.5, dark);
+        grad.addColorStop(1, transparent);
+      } else {
+        grad.addColorStop(0, transparent);
+        grad.addColorStop(1, dark);
+      }
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, y0, canvas.width, h);
+    }
 
-    ctx.lineWidth   = 1.5;
+    // Glowing line. shadowBlur approximates the FFmpeg gblur halo we use on export.
+    const glowRadius = Math.max(8, Math.min(canvas.width, h) * 0.04);
+    ctx.lineWidth = 2;
+    ctx.lineCap   = 'round';
+    ctx.lineJoin  = 'round';
+    ctx.shadowBlur  = glowRadius;
+    ctx.shadowColor = rgba(vizColor, 0.95);
     ctx.strokeStyle = rgba(vizColor, vizOpacity);
-    ctx.beginPath();
 
+    ctx.beginPath();
     const sliceW = canvas.width / data.length;
     for (let i = 0; i < data.length; i++) {
-      const v = data[i] / 128.0;        // 0–2, centre = 1.0
+      const v = (data[i] - 128) / 128.0;   // -1 .. 1
       const x = i * sliceW;
-      const y = y0 + (v / 2) * h;       // maps to y0 … y0+h
+      const y = centerY + v * amp;
       i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
     }
     ctx.stroke();
+
+    ctx.shadowBlur = 0; // reset so other draws don't inherit
   }
 
   function drawBars() {
@@ -161,22 +196,37 @@
     const data   = new Uint8Array(bufLen);
     analyser.getByteFrequencyData(data);
 
-    const h  = Math.round(canvas.height * vizHeight);
-    const y0 = bandY(h);
+    const { y: y0, h } = getBand();
 
-    ctx.fillStyle = `rgba(0,0,0,${vizOpacity * 0.45})`;
-    ctx.fillRect(0, y0, canvas.width, h);
-
+    // Edge-to-edge: bars span the full canvas width with no container.
+    // Frequency bins are sampled on a LOG scale so bass doesn't pile up on
+    // the left and treble doesn't get squashed into invisibility on the right.
     const numBars = 80;
     const barW    = Math.max(2, Math.floor((canvas.width / numBars) * 0.6));
-    const gap     = canvas.width / numBars;
-    const step    = Math.max(1, Math.floor(bufLen / numBars));
+    // Stride so the first bar starts at x=0 and the last bar's right edge
+    // lands exactly on canvas.width — no trailing gap.
+    const stride = (canvas.width - barW) / (numBars - 1);
+
+    const minBin = 2;                   // skip DC + 1st bin (rumble)
+    const maxBin = bufLen - 1;
+    const logMin = Math.log(minBin);
+    const logMax = Math.log(maxBin);
 
     ctx.fillStyle = rgba(vizColor, vizOpacity);
     for (let i = 0; i < numBars; i++) {
-      const barH  = ((data[i * step] || 0) / 255) * h;
-      const barY  = vizPosition === 'top' ? y0 : y0 + h - barH;
-      ctx.fillRect(Math.round(i * gap), barY, barW, barH);
+      const tA = i       / numBars;
+      const tB = (i + 1) / numBars;
+      const lo = Math.max(minBin, Math.floor(Math.exp(logMin + tA * (logMax - logMin))));
+      const hi = Math.max(lo + 1, Math.floor(Math.exp(logMin + tB * (logMax - logMin))));
+      let sum = 0;
+      for (let j = lo; j < hi && j < bufLen; j++) sum += data[j];
+      const avg = sum / (hi - lo);
+      // Cube-root amplitude scale = perceptually softer compression than linear,
+      // makes quieter highs visible without crushing the loud lows.
+      const norm = Math.cbrt(avg / 255);
+      const barH = Math.max(2, norm * h);
+      const barY = vizPosition === 'top' ? y0 : y0 + h - barH;
+      ctx.fillRect(Math.round(i * stride), barY, barW, barH);
     }
   }
 
@@ -185,12 +235,19 @@
     const data   = new Uint8Array(bufLen);
     analyser.getByteFrequencyData(data);
 
-    const h  = Math.round(canvas.height * vizHeight);
-    const y0 = bandY(h);
+    const { y: y0, h } = getBand();
 
-    ctx.fillStyle = `rgba(0,0,0,${vizOpacity * 0.45})`;
-    ctx.fillRect(0, y0, canvas.width, h);
+    // Smooth spectrum: many tightly-packed bars across the full width.
+    // Log-frequency mapping spreads bass/mids/treble evenly. Cube-root
+    // amplitude so quiet highs still register.
+    const numBars = 200;
+    const slotW   = canvas.width / numBars;        // bars touch — no visible gaps
+    const minBin  = 2;
+    const maxBin  = bufLen - 1;
+    const logMin  = Math.log(minBin);
+    const logMax  = Math.log(maxBin);
 
+    // Horizontal gradient: edge color → user color → edge color.
     const grad = ctx.createLinearGradient(0, y0, canvas.width, y0);
     const [r,g,b] = hexToRgb(vizColor);
     grad.addColorStop(0,   `rgba(79,195,247,${vizOpacity})`);
@@ -198,11 +255,21 @@
     grad.addColorStop(1,   `rgba(171,71,188,${vizOpacity})`);
     ctx.fillStyle = grad;
 
-    const barW = canvas.width / bufLen;
-    for (let i = 0; i < bufLen; i++) {
-      const barH = (data[i] / 255) * h;
+    for (let i = 0; i < numBars; i++) {
+      const tA = i       / numBars;
+      const tB = (i + 1) / numBars;
+      const lo = Math.max(minBin, Math.floor(Math.exp(logMin + tA * (logMax - logMin))));
+      const hi = Math.max(lo + 1, Math.floor(Math.exp(logMin + tB * (logMax - logMin))));
+      let sum = 0;
+      for (let j = lo; j < hi && j < bufLen; j++) sum += data[j];
+      const avg = sum / (hi - lo);
+      const norm = Math.cbrt(avg / 255);
+      const barH = Math.max(1, norm * h);
       const barY = vizPosition === 'top' ? y0 : y0 + h - barH;
-      ctx.fillRect(i * barW, barY, barW, barH);
+      // Width math: span the canvas exactly, no trailing gap.
+      const x  = i * slotW;
+      const xN = (i + 1) * slotW;
+      ctx.fillRect(Math.round(x), barY, Math.round(xN) - Math.round(x), barH);
     }
   }
 })();
