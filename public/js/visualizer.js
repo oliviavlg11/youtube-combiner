@@ -12,6 +12,7 @@
   let vizOpacity  = 0.6;
   let vizPosition = 'bottom'; // 'bottom' | 'top'
   let vizHeight   = 0.20;     // fraction of canvas height (0.10–0.50)
+  let vizGradient = null;     // null OR ['#hex', '#hex', '#hex'] for multi-stop fill
   let isPlaying   = false;
 
   // ── Helpers ──────────────────────────────────────────────────────────
@@ -112,6 +113,10 @@
     if (isPlaying) startDrawing();
   });
 
+  window.addEventListener('viz-gradient-changed', ({ detail }) => {
+    vizGradient = (detail && Array.isArray(detail.stops) && detail.stops.length >= 2) ? detail.stops : null;
+  });
+
   window.addEventListener('viz-playback', ({ detail: { playing } }) => {
     isPlaying = playing;
     if (playing && vizType !== 'none') {
@@ -198,21 +203,35 @@
 
     const { y: y0, h } = getBand();
 
-    // Edge-to-edge: bars span the full canvas width with no container.
-    // Frequency bins are sampled on a LOG scale so bass doesn't pile up on
-    // the left and treble doesn't get squashed into invisibility on the right.
-    const numBars = 80;
-    const barW    = Math.max(2, Math.floor((canvas.width / numBars) * 0.6));
-    // Stride so the first bar starts at x=0 and the last bar's right edge
-    // lands exactly on canvas.width — no trailing gap.
-    const stride = (canvas.width - barW) / (numBars - 1);
+    // Thin equalizer-style bars with visible gaps. Use a fixed integer stride
+    // so every bar/gap is pixel-perfect — fractional slot widths produce
+    // periodic rounding artifacts. Frequency bins are sampled on a LOG scale
+    // so bass doesn't pile up on the left and treble isn't squashed.
+    const stride  = 3;
+    const barW    = 2;
+    const numBars = Math.max(40, Math.floor(canvas.width / stride));
+    const startX  = Math.floor((canvas.width - numBars * stride) / 2);
 
     const minBin = 2;                   // skip DC + 1st bin (rumble)
     const maxBin = bufLen - 1;
     const logMin = Math.log(minBin);
     const logMax = Math.log(maxBin);
 
-    ctx.fillStyle = rgba(vizColor, vizOpacity);
+    // Vertical gradient fill if the user picked one; otherwise solid color.
+    // Stops are ordered [top, ..., bottom] — gradient runs top → bottom.
+    let fillStyle;
+    if (vizGradient && vizGradient.length >= 2) {
+      const grad = ctx.createLinearGradient(0, y0, 0, y0 + h);
+      vizGradient.forEach((color, i) => {
+        const t = i / (vizGradient.length - 1);
+        grad.addColorStop(t, rgba(color, vizOpacity));
+      });
+      fillStyle = grad;
+    } else {
+      fillStyle = rgba(vizColor, vizOpacity);
+    }
+    ctx.fillStyle = fillStyle;
+
     for (let i = 0; i < numBars; i++) {
       const tA = i       / numBars;
       const tB = (i + 1) / numBars;
@@ -226,7 +245,8 @@
       const norm = Math.cbrt(avg / 255);
       const barH = Math.max(2, norm * h);
       const barY = vizPosition === 'top' ? y0 : y0 + h - barH;
-      ctx.fillRect(Math.round(i * stride), barY, barW, barH);
+      const x = startX + i * stride;
+      ctx.fillRect(x, barY, barW, barH);
     }
   }
 

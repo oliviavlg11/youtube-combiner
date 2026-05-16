@@ -179,7 +179,7 @@
     clearStallTimer();
 
     // Add cancel button
-    exportActions.innerHTML = `<button class="btn btn-danger" id="cancel-btn">Cancel</button>`;
+    exportActions.innerHTML = `<button class="btn btn-secondary" id="cancel-btn">Cancel</button>`;
     document.getElementById('cancel-btn').addEventListener('click', () => cancelExport(jobId));
 
     eventSource.onmessage = e => {

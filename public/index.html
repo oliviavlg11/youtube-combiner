@@ -3,43 +3,124 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>YT Playloop</title>
+  <title>LoopVibe — 1-Click Music Video Generator</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="stylesheet" href="/css/styles.css">
-  <link href="https://fonts.googleapis.com/css2?family=Lobster&display=swap" rel="stylesheet">
 </head>
 <body>
 
-<header>
-  <div class="header-spacer"></div>
-  <div class="header-center">
-    <h1>YT Playloop</h1>
-    <div class="subtitle">Create. Loop. Export.</div>
+<header class="app-header">
+  <div class="brand">
+    <div class="brand-logo" aria-hidden="true">
+      <svg viewBox="0 0 32 32" width="36" height="36">
+        <defs>
+          <linearGradient id="lvg" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#a855f7"/>
+            <stop offset="100%" stop-color="#6366f1"/>
+          </linearGradient>
+        </defs>
+        <rect x="2"  y="14" width="3" height="10" rx="1.2" fill="url(#lvg)"/>
+        <rect x="7"  y="9"  width="3" height="15" rx="1.2" fill="url(#lvg)"/>
+        <rect x="12" y="4"  width="3" height="22" rx="1.2" fill="url(#lvg)"/>
+        <rect x="17" y="11" width="3" height="13" rx="1.2" fill="url(#lvg)"/>
+        <rect x="22" y="7"  width="3" height="20" rx="1.2" fill="url(#lvg)"/>
+        <rect x="27" y="13" width="3" height="11" rx="1.2" fill="url(#lvg)"/>
+      </svg>
+    </div>
+    <div class="brand-text">
+      <h1>LoopVibe</h1>
+      <div class="subtitle">1-Click Music Video Generator</div>
+    </div>
   </div>
-  <div class="header-spacer" style="display:flex;justify-content:flex-end">
-    <button id="theme-toggle" title="Toggle light/dark mode">
+
+  <div class="header-actions">
+    <button id="theme-toggle" class="icon-btn" title="Toggle light/dark mode" aria-label="Toggle theme">
       <span id="theme-icon">&#9788;</span>
-      <span id="theme-label">Light</span>
+      <span id="theme-label" class="sr-only">Light</span>
+    </button>
+    <button id="settings-btn" class="icon-btn" title="Advanced settings" aria-label="Settings">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9 1.65 1.65 0 0 0 4.27 7.18l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+    </button>
+    <button class="btn btn-primary header-export-btn" id="header-export-btn" type="button">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/>
+        <line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+      Export Video
+      <span class="caret">&#9662;</span>
     </button>
   </div>
 </header>
 
 <main class="layout">
 
-  <!-- Left: Audio Playlist -->
-  <div class="panel">
-    <div class="panel-header">
-      <h2>Audio Playlist</h2>
-      <span id="track-count" style="color:var(--text-muted);font-size:12px">0 tracks</span>
-    </div>
-    <div class="panel-body">
+  <!-- LEFT: numbered step cards -->
+  <div class="steps-column">
 
-      <div class="drop-zone" id="audio-drop-zone">
-        <input type="file" id="audio-input" accept=".mp3,.wav,.aac,.m4a,.ogg" multiple>
-        <div class="icon">&#127925;</div>
-        <strong class="drop-text-desktop">Drop MP3 files here</strong>
+    <!-- Step 1: Add Video -->
+    <section class="step-card" id="step-video">
+      <div class="step-head">
+        <div class="step-num">1</div>
+        <div class="step-titles">
+          <div class="step-title">Add Video</div>
+          <div class="step-sub">Upload any video</div>
+        </div>
+        <button class="step-help" title="Drop a video file. It will loop automatically until your music ends.">?</button>
+      </div>
+
+      <div class="drop-zone" id="video-drop-zone">
+        <input type="file" id="video-input" accept=".mp4,.mov,.mkv,.webm,.avi">
+        <div class="drop-icon">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="23 7 16 12 23 17 23 7"/>
+            <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+          </svg>
+        </div>
+        <strong class="drop-text-desktop">Drop video file here</strong>
         <strong class="drop-text-mobile">Tap to browse</strong>
-        <p>MP3, WAV, AAC, M4A, OGG</p>
+        <p>MP4, MOV, MKV, WebM</p>
+      </div>
+
+      <div class="thumb-row" id="thumb-row">
+        <div class="thumb-wrap">
+          <video id="thumb-video" muted playsinline></video>
+          <button class="thumb-remove" id="thumb-remove-btn" title="Remove">&times;</button>
+          <div class="thumb-play"><span>&#9654;</span></div>
+        </div>
+      </div>
+
+      <div id="video-warning" class="warning" style="display:none"></div>
+    </section>
+
+    <!-- Step 2: Add Songs -->
+    <section class="step-card" id="step-songs">
+      <div class="step-head">
+        <div class="step-num">2</div>
+        <div class="step-titles">
+          <div class="step-title">Add Songs</div>
+          <div class="step-sub">Add multiple songs to create a playlist</div>
+        </div>
+        <button class="add-songs-btn" type="button" onclick="document.getElementById('audio-input').click()">
+          <span class="plus">&#43;</span> Add Songs
+        </button>
+      </div>
+
+      <div class="drop-zone drop-zone-compact" id="audio-drop-zone">
+        <input type="file" id="audio-input" accept=".mp3,.wav,.aac,.m4a,.ogg" multiple>
+        <div class="drop-icon-sm">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 18V5l12-2v13"/>
+            <circle cx="6" cy="18" r="3"/>
+            <circle cx="18" cy="16" r="3"/>
+          </svg>
+        </div>
+        <span class="drop-text-desktop">Drop MP3 files here</span>
+        <span class="drop-text-mobile">Tap to browse</span>
+        <small>MP3, WAV, AAC, M4A, OGG · <span id="track-count">0 tracks</span></small>
       </div>
 
       <ul class="playlist" id="playlist"></ul>
@@ -64,75 +145,185 @@
       </div>
 
       <div class="playlist-total" id="playlist-total" style="display:none">
-        Total duration: <span id="total-duration">0:00</span>
+        Estimated Final Duration <span id="total-duration">0:00</span>
+      </div>
+    </section>
+
+    <!-- Step 3: Visualizer -->
+    <section class="step-card" id="step-viz">
+      <div class="step-head">
+        <div class="step-num">3</div>
+        <div class="step-titles">
+          <div class="step-title">Visualizer</div>
+          <div class="step-sub">Choose a visualizer for your video</div>
+        </div>
       </div>
 
-    </div>
-  </div>
+      <!-- Hidden select drives the existing JS; visible cards update it -->
+      <select id="viz-type" class="sr-only" aria-hidden="true">
+        <option value="none">None</option>
+        <option value="waveform" selected>Waveform</option>
+        <option value="bars">Bars</option>
+        <option value="spectrum">Spectrum</option>
+      </select>
 
-  <!-- Right: Video + Export -->
-  <div style="display:flex;flex-direction:column;gap:16px">
-
-    <!-- Video -->
-    <div class="panel">
-      <div class="panel-header">
-        <h2>Background Video</h2>
+      <div class="viz-grid" role="radiogroup" aria-label="Visualizer type">
+        <button type="button" class="viz-card" data-viz="none" role="radio" aria-checked="false">
+          <span class="viz-card-icon">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9"/>
+              <line x1="5" y1="19" x2="19" y2="5"/>
+            </svg>
+          </span>
+          None
+        </button>
+        <button type="button" class="viz-card active" data-viz="waveform" role="radio" aria-checked="true">
+          <span class="viz-card-icon">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 12c2-4 4-4 6 0s4 4 6 0 4-4 6 0 4 4 6 0"/>
+            </svg>
+          </span>
+          Waveform
+        </button>
+        <button type="button" class="viz-card" data-viz="bars" role="radio" aria-checked="false">
+          <span class="viz-card-icon">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="4"  y1="18" x2="4"  y2="10"/>
+              <line x1="9"  y1="18" x2="9"  y2="4"/>
+              <line x1="14" y1="18" x2="14" y2="8"/>
+              <line x1="19" y1="18" x2="19" y2="12"/>
+            </svg>
+          </span>
+          Bars
+        </button>
+        <button type="button" class="viz-card" data-viz="spectrum" role="radio" aria-checked="false">
+          <span class="viz-card-icon">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9"/>
+              <circle cx="12" cy="12" r="5"/>
+              <circle cx="12" cy="12" r="1.5"/>
+            </svg>
+          </span>
+          Spectrum
+        </button>
       </div>
-      <div class="panel-body">
 
-        <div class="drop-zone" id="video-drop-zone">
-          <input type="file" id="video-input" accept=".mp4,.mov,.mkv,.webm,.avi">
-          <div class="icon">&#127916;</div>
-          <strong class="drop-text-desktop">Drop video file here</strong>
-          <strong class="drop-text-mobile">Tap to browse</strong>
-          <p>MP4, MOV, MKV, WebM</p>
+      <div class="viz-section" id="viz-options">
+        <div class="viz-subhead">Position</div>
+        <div class="seg-row" role="radiogroup" aria-label="Visualizer position">
+          <button type="button" class="seg-btn active" data-pos="bottom">Bottom</button>
+          <button type="button" class="seg-btn" data-pos="centered">Center</button>
+          <button type="button" class="seg-btn" data-pos="fullscreen">Full Screen</button>
+          <button type="button" class="seg-btn" data-pos="top">Top</button>
+        </div>
+        <select id="viz-position" class="sr-only">
+          <option value="bottom" selected>Bottom</option>
+          <option value="centered">Center</option>
+          <option value="fullscreen">Full Screen</option>
+          <option value="top">Top</option>
+        </select>
+
+        <div class="viz-subhead">Color Style</div>
+        <div class="color-row">
+          <label class="swatch swatch-white active">
+            <input type="radio" name="color-style" value="#e5e7eb" checked>
+            <span class="swatch-circle" style="background:#fff"></span>
+            White
+          </label>
+          <button type="button" class="swatch swatch-gradient" id="swatch-gradient">
+            <span class="swatch-circle" id="swatch-gradient-circle" style="background:linear-gradient(180deg,#ef4444 0%,#facc15 50%,#22c55e 100%)"></span>
+            Gradient
+          </button>
+          <label class="swatch swatch-glow">
+            <input type="radio" name="color-style" value="#f0abfc">
+            <span class="swatch-circle" style="background:radial-gradient(circle,#fff 0%,#c084fc 70%)"></span>
+            Soft Glow
+          </label>
+          <label class="swatch swatch-custom" title="Custom color">
+            <input type="color" id="viz-color" value="#e5e7eb">
+            <span class="swatch-circle swatch-custom-circle"></span>
+            Custom
+          </label>
         </div>
 
-        <div class="video-preview" id="video-preview">
-          <button class="video-remove" id="video-remove-btn">&#x2715; Remove</button>
-          <video id="video-player" loop muted playsinline></video>
-          <canvas id="viz-canvas" class="viz-canvas"></canvas>
-          <div class="preview-play-btn" id="preview-play-btn">
-            <span id="preview-play-icon">&#9654;</span>
-          </div>
-          <div class="preview-track-label" id="preview-track-label"></div>
-          <div class="preview-seekbar" id="preview-seekbar">
-            <span id="preview-time-current">0:00</span>
-            <div class="seekbar-track" id="seekbar-track">
-              <div class="seekbar-fill" id="seekbar-fill"></div>
-              <div class="seekbar-thumb" id="seekbar-thumb"></div>
+        <div class="gradient-pickers" id="gradient-pickers" hidden>
+          <label class="grad-stop">
+            <input type="color" data-stop="0" value="#ef4444">
+            <span class="grad-stop-circle"></span>
+            <small>Top</small>
+          </label>
+          <label class="grad-stop">
+            <input type="color" data-stop="1" value="#facc15">
+            <span class="grad-stop-circle"></span>
+            <small>Middle</small>
+          </label>
+          <label class="grad-stop">
+            <input type="color" data-stop="2" value="#22c55e">
+            <span class="grad-stop-circle"></span>
+            <small>Bottom</small>
+          </label>
+        </div>
+
+        <details class="viz-advanced">
+          <summary>Advanced visualizer options</summary>
+          <div class="viz-opts-grid">
+            <div class="field">
+              <label>Opacity: <span id="viz-opacity-label">60%</span></label>
+              <input type="range" id="viz-opacity" min="10" max="100" step="5" value="60">
             </div>
-            <span id="preview-time-total">0:00</span>
+            <div class="field">
+              <label>Height: <span id="viz-height-label">20%</span></label>
+              <input type="range" id="viz-height" min="10" max="50" step="5" value="20">
+            </div>
           </div>
-          <div class="video-meta" id="video-meta"></div>
-        </div>
-
-        <div id="video-warning" class="warning" style="display:none"></div>
-
+        </details>
       </div>
-    </div>
+    </section>
 
-    <!-- Export -->
-    <div class="panel">
-      <div class="panel-header">
-        <h2>Export</h2>
-      </div>
-      <div class="panel-body">
-
-        <!-- Format selector -->
-        <div class="format-tabs" id="format-tabs">
-          <button class="format-tab active" data-format="landscape">
-            <span class="format-icon">&#9646;&#9644;</span>
-            <span>YouTube</span>
-            <small>16:9 Landscape</small>
-          </button>
-          <button class="format-tab" data-format="portrait">
-            <span class="format-icon">&#9645;</span>
-            <span>TikTok / Instagram</span>
-            <small>9:16 Portrait</small>
-          </button>
+    <!-- Step 4: Format -->
+    <section class="step-card" id="step-format">
+      <div class="step-head">
+        <div class="step-num">4</div>
+        <div class="step-titles">
+          <div class="step-title">Format</div>
+          <div class="step-sub">Choose video format</div>
         </div>
+      </div>
 
+      <div class="format-tabs" id="format-tabs">
+        <button class="format-tab" data-format="portrait" type="button">
+          <span class="format-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="7" y="2" width="10" height="20" rx="2"/>
+              <line x1="11" y1="18" x2="13" y2="18"/>
+            </svg>
+          </span>
+          <span class="format-label">Portrait</span>
+          <small>9:16</small>
+        </button>
+        <button class="format-tab active" data-format="landscape" type="button">
+          <span class="format-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="6" width="20" height="12" rx="2"/>
+              <circle cx="18" cy="10" r="1" fill="currentColor"/>
+            </svg>
+          </span>
+          <span class="format-label">Landscape</span>
+          <small>16:9</small>
+        </button>
+        <button class="format-tab format-tab-disabled" type="button" disabled title="Coming soon">
+          <span class="format-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="4" y="4" width="16" height="16" rx="2"/>
+            </svg>
+          </span>
+          <span class="format-label">Square</span>
+          <small>1:1</small>
+        </button>
+      </div>
+
+      <details class="advanced-section">
+        <summary>Advanced export settings</summary>
         <div class="settings-grid">
           <div class="field" id="resolution-field">
             <label>Resolution</label>
@@ -164,53 +355,14 @@
           </div>
         </div>
 
-        <!-- Visualizer -->
-        <div class="viz-section">
-          <div class="viz-header">
-            <label class="viz-label">Visualizer</label>
-            <select id="viz-type">
-              <option value="none">None</option>
-              <option value="waveform">Waveform</option>
-              <option value="bars">Frequency Bars</option>
-              <option value="spectrum">Spectrum</option>
-            </select>
-          </div>
-          <div id="viz-options" class="viz-options">
-            <div class="viz-opts-grid">
-              <div class="field">
-                <label>Color</label>
-                <input type="color" id="viz-color" value="#e53935">
-              </div>
-              <div class="field">
-                <label>Position</label>
-                <select id="viz-position">
-                  <option value="bottom">Bottom</option>
-                  <option value="centered">Centered</option>
-                  <option value="top">Top</option>
-                  <option value="fullscreen">Full screen</option>
-                </select>
-              </div>
-              <div class="field">
-                <label>Opacity: <span id="viz-opacity-label">60%</span></label>
-                <input type="range" id="viz-opacity" min="10" max="100" step="5" value="60">
-              </div>
-              <div class="field">
-                <label>Height: <span id="viz-height-label">20%</span></label>
-                <input type="range" id="viz-height" min="10" max="50" step="5" value="20">
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="loop-row" style="margin-bottom:12px">
-          <label for="hw-accel" style="font-size:13px">Hardware acceleration (macOS)</label>
+        <div class="loop-row hw-row">
+          <label for="hw-accel">Hardware acceleration (macOS)</label>
           <label class="toggle">
             <input type="checkbox" id="hw-accel">
             <span class="toggle-slider"></span>
           </label>
         </div>
 
-        <!-- Presets -->
         <div class="presets-section">
           <div class="presets-row">
             <select id="preset-select" class="preset-select">
@@ -221,20 +373,127 @@
           </div>
           <button class="btn btn-secondary btn-sm" id="preset-save-btn">Save as Preset…</button>
         </div>
+      </details>
+    </section>
 
-        <button class="btn btn-primary" id="export-btn" disabled>Export MP4</button>
+  </div>
 
-        <div class="progress-section" id="progress-section">
-          <div class="progress-stage">
-            <span id="stage-label">Starting...</span>
-            <span id="pct-label">0%</span>
+  <!-- RIGHT: preview + summary + generate -->
+  <div class="preview-column">
+
+    <section class="preview-card">
+      <div class="preview-card-head">
+        <div class="preview-title">
+          <span class="preview-dot"></span> Preview
+        </div>
+        <div class="preview-note">This is a preview. Final video may vary.</div>
+      </div>
+
+      <div class="preview-stage">
+        <div class="preview-empty" id="preview-empty">
+          <div class="preview-empty-glow"></div>
+          <div class="preview-empty-icon">
+            <svg viewBox="0 0 24 24" width="46" height="46" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="23 7 16 12 23 17 23 7"/>
+              <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+            </svg>
           </div>
-          <div class="progress-bar-wrap">
-            <div class="progress-bar" id="progress-bar"></div>
-          </div>
-          <div class="export-actions" id="export-actions"></div>
+          <div class="preview-empty-text">Add a video and songs to preview</div>
         </div>
 
+        <div class="video-preview" id="video-preview">
+          <button class="video-remove" id="video-remove-btn">&times;</button>
+          <video id="video-player" loop muted playsinline></video>
+          <canvas id="viz-canvas" class="viz-canvas"></canvas>
+          <div class="preview-play-btn" id="preview-play-btn">
+            <span id="preview-play-icon">&#9654;</span>
+          </div>
+          <div class="preview-track-label" id="preview-track-label"></div>
+          <div class="preview-seekbar" id="preview-seekbar">
+            <span id="preview-time-current">0:00</span>
+            <div class="seekbar-track" id="seekbar-track">
+              <div class="seekbar-fill" id="seekbar-fill"></div>
+              <div class="seekbar-thumb" id="seekbar-thumb"></div>
+            </div>
+            <span id="preview-time-total">0:00</span>
+          </div>
+          <div class="video-meta" id="video-meta"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="summary-card">
+      <h3>Project Summary</h3>
+      <div class="summary-rows">
+        <div class="summary-row"><span>Video</span><span id="summary-video">No video</span></div>
+        <div class="summary-row"><span>Songs</span><span id="summary-songs">0 songs</span></div>
+        <div class="summary-row"><span>Loop Playlist</span><span id="summary-loops">1 time</span></div>
+        <div class="summary-row"><span>Visualizer</span><span id="summary-viz">Waveform (Bottom)</span></div>
+        <div class="summary-row"><span>Format</span><span id="summary-format">Landscape (16:9)</span></div>
+        <div class="summary-row"><span>Estimated Duration</span><span id="summary-duration" class="accent">0:00</span></div>
+      </div>
+    </section>
+
+    <button class="btn-generate" id="export-btn" type="button" disabled>
+      <span class="btn-generate-icon">
+        <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2l2.39 4.84L20 8l-4 3.89L17.18 18 12 15.27 6.82 18 8 11.89 4 8l5.61-1.16L12 2z"/>
+        </svg>
+      </span>
+      <span class="btn-generate-text">
+        <strong>Generate Video</strong>
+        <span>One click to create your music video</span>
+      </span>
+    </button>
+
+    <div class="progress-section" id="progress-section">
+      <div class="progress-stage">
+        <span id="stage-label">Starting...</span>
+        <span id="pct-label">0%</span>
+      </div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar" id="progress-bar"></div>
+      </div>
+      <div class="export-actions" id="export-actions"></div>
+    </div>
+
+    <div class="features-row">
+      <div class="feature">
+        <span class="feature-icon">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"/>
+            <path d="M20.49 15A9 9 0 1 1 5.64 5.64L23 10"/>
+          </svg>
+        </span>
+        <div class="feature-text">
+          <strong>Auto Loop</strong>
+          <small>Video will automatically loop until music ends</small>
+        </div>
+      </div>
+      <div class="feature">
+        <span class="feature-icon">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 18V5l12-2v13"/>
+            <circle cx="6" cy="18" r="3"/>
+            <circle cx="18" cy="16" r="3"/>
+          </svg>
+        </span>
+        <div class="feature-text">
+          <strong>High Quality</strong>
+          <small>Export in high quality MP4 format</small>
+        </div>
+      </div>
+      <div class="feature">
+        <span class="feature-icon">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+        </span>
+        <div class="feature-text">
+          <strong>Fast &amp; Simple</strong>
+          <small>Just one click and you're done!</small>
+        </div>
       </div>
     </div>
 
@@ -249,6 +508,7 @@
 <script src="/js/exportPanel.js"></script>
 <script src="/js/visualizer.js"></script>
 <script src="/js/presets.js"></script>
+<script src="/js/uiPanel.js"></script>
 
 </body>
 </html>
