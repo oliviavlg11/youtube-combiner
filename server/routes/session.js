@@ -56,9 +56,21 @@ router.put('/playlist', (req, res) => {
 // PUT /api/session/settings — update export settings
 router.put('/settings', (req, res) => {
   const store = req.store;
-  const allowed = ['resolution', 'fps', 'videoBitrate', 'audioBitrate', 'useHardwareAccel', 'format', 'visualizer', 'vizColor', 'vizOpacity', 'vizPosition', 'vizHeight'];
+  const allowed = [
+    'resolution', 'fps', 'videoBitrate', 'audioBitrate', 'useHardwareAccel', 'format',
+    'visualizer', 'vizColor', 'vizOpacity', 'vizPosition', 'vizHeight',
+    'showSongTitle', 'showArtistName', 'songTitle', 'artistName',
+    'textFont', 'textSize', 'textColor', 'textPosition', 'textGlow',
+    'mediaOffsetX', 'mediaOffsetY',
+  ];
   for (const key of allowed) {
     if (req.body[key] !== undefined) store.settings[key] = req.body[key];
+  }
+  // Clamp pan offsets to [-1, +1]
+  for (const k of ['mediaOffsetX', 'mediaOffsetY']) {
+    if (typeof store.settings[k] === 'number') {
+      store.settings[k] = Math.max(-1, Math.min(1, store.settings[k]));
+    }
   }
   res.json({ success: true, settings: store.settings });
 });

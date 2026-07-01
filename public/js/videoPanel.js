@@ -2,7 +2,9 @@
   const dropZone = document.getElementById('video-drop-zone');
   const fileInput = document.getElementById('video-input');
   const previewEl = document.getElementById('video-preview');
+  const stageEl = document.querySelector('.preview-stage');
   const playerEl = document.getElementById('video-player');
+  const imageEl = document.getElementById('image-player');
   const metaEl = document.getElementById('video-meta');
   const removeBtn = document.getElementById('video-remove-btn');
   const warningEl = document.getElementById('video-warning');
@@ -22,6 +24,172 @@
   let isPlaying = false;
   let isSeeking = false;
   let playlistTotalDuration = 0; // kept in sync via playlist-duration-changed
+
+  // True when the loaded media is a still image (no video to play/loop).
+  // When true, the seekbar and play state are driven purely by the audio.
+  function isImageMedia() {
+    return !!(appState.video && appState.video.mediaType === 'image');
+  }
+
+  // ── Format-driven aspect + cover-mode pan ────────────────────────────
+  // Preview stage matches the selected export format. The media inside is
+  // rendered with object-fit:cover so what you see is what gets exported.
+
+  const FORMAT_ASPECT = { landscape: 16 / 9, portrait: 9 / 16, square: 1 };
+
+  let currentFormat = (appState.settings && appState.settings.format) || 'landscape';
+  let offsetX = Number(appState.settings && appState.settings.mediaOffsetX) || 0;
+  let offsetY = Number(appState.settings && appState.settings.mediaOffsetY) || 0;
+
+  function applyStageAspect() {
+    if (!stageEl) return;
+    const aspect = FORMAT_ASPECT[currentFormat] || FORMAT_ASPECT.landscape;
+    stageEl.style.aspectRatio = `${aspect}`;
+  }
+
+  function applyOffset() {
+    // CSS variables consumed by .video-preview video/img object-position
+    previewEl.style.setProperty('--offset-x', String(offsetX));
+    previewEl.style.setProperty('--offset-y', String(offsetY));
+    refreshDraggable();
+  }
+
+  // How much of the source overflows the canvas (in canvas pixels) when
+  // scaled to cover. Returns { x, y } both >= 0. Either may be 0 when the
+  // media already fills that axis exactly.
+  function overflowPx() {
+    if (!appState.video || !stageEl) return { x: 0, y: 0 };
+    const { width: mediaW, height: mediaH } = appState.video;
+    if (!mediaW || !mediaH) return { x: 0, y: 0 };
+    const rect = stageEl.getBoundingClientRect();
+    const stageW = rect.width;
+    const stageH = rect.height;
+    if (!stageW || !stageH) return { x: 0, y: 0 };
+    const mediaAspect = mediaW / mediaH;
+    const stageAspect = stageW / stageH;
+    if (mediaAspect > stageAspect) {
+      // Wider than canvas → fills height, overflows horizontally
+      const scaledW = stageH * mediaAspect;
+      return { x: Math.max(0, scaledW - stageW), y: 0 };
+    }
+    // Taller (or equal) → fills width, overflows vertically
+    const scaledH = stageW / mediaAspect;
+    return { x: 0, y: Math.max(0, scaledH - stageH) };
+  }
+
+  function refreshDraggable() {
+    const { x, y } = overflowPx();
+    // Threshold of 1px to avoid flicker from sub-pixel rounding
+    previewEl.classList.toggle('draggable', x > 1 || y > 1);
+  }
+
+  // Persist the offset to the server (debounced).
+  let saveOffsetTimer = null;
+  function saveOffset() {
+    clearTimeout(saveOffsetTimer);
+    saveOffsetTimer = setTimeout(() => {
+      fetch('/api/session/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mediaOffsetX: offsetX, mediaOffsetY: offsetY }),
+      }).catch(() => {});
+    }, 200);
+  }
+
+  function resetOffset() {
+    offsetX = 0;
+    offsetY = 0;
+    applyOffset();
+  }
+
+  window.addEventListener('format-changed', ({ detail }) => {
+    if (detail && detail.format) currentFormat = detail.format;
+    applyStageAspect();
+    requestAnimationFrame(refreshDraggable);
+  });
+
+  window.addEventListener('session-loaded', e => {
+    const s = (e.detail && e.detail.settings) || {};
+    if (s.format) currentFormat = s.format;
+    if (typeof s.mediaOffsetX === 'number') offsetX = s.mediaOffsetX;
+    if (typeof s.mediaOffsetY === 'number') offsetY = s.mediaOffsetY;
+    applyStageAspect();
+    applyOffset();
+  });
+
+  window.addEventListener('resize', refreshDraggable);
+
+  // ── Drag-to-pan ──────────────────────────────────────────────────────
+  // Mousedown on the play overlay (which covers the media). Treat as a click
+  // unless the pointer moves past DRAG_THRESHOLD, then suppress the play
+  // toggle and pan instead.
+
+  const DRAG_THRESHOLD = 5;
+  let dragState = null;
+
+  function onPointerDown(e) {
+    if (!appState.video) return;
+    // Don't hijack the seekbar, remove button, or other controls
+    if (e.target.closest('.preview-seekbar, .video-remove')) return;
+    const { x: overX, y: overY } = overflowPx();
+    if (overX <= 1 && overY <= 1) return; // nothing to pan
+
+    const point = e.touches ? e.touches[0] : e;
+    dragState = {
+      startX: point.clientX,
+      startY: point.clientY,
+      baseOffsetX: offsetX,
+      baseOffsetY: offsetY,
+      overX,
+      overY,
+      moved: false,
+      pointerId: e.pointerId,
+    };
+  }
+
+  function onPointerMove(e) {
+    if (!dragState) return;
+    const point = e.touches ? e.touches[0] : e;
+    const dx = point.clientX - dragState.startX;
+    const dy = point.clientY - dragState.startY;
+    if (!dragState.moved && Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
+    if (!dragState.moved) {
+      dragState.moved = true;
+      previewEl.classList.add('dragging');
+    }
+    // 1px of pointer movement = 1px of image movement; total range is overflow
+    // (drag from one extreme to the other), which maps to offset delta of 2.
+    if (dragState.overX > 1) {
+      offsetX = Math.max(-1, Math.min(1, dragState.baseOffsetX + (2 * dx) / dragState.overX));
+    }
+    if (dragState.overY > 1) {
+      offsetY = Math.max(-1, Math.min(1, dragState.baseOffsetY + (2 * dy) / dragState.overY));
+    }
+    applyOffset();
+    if (e.cancelable) e.preventDefault();
+  }
+
+  function onPointerUp() {
+    if (!dragState) return;
+    const wasDrag = dragState.moved;
+    dragState = null;
+    previewEl.classList.remove('dragging');
+    if (wasDrag) {
+      saveOffset();
+      // Swallow the synthetic click that follows on touch/mouse so the play
+      // button doesn't toggle when we were actually dragging.
+      const swallow = ev => { ev.stopPropagation(); ev.preventDefault(); };
+      previewEl.addEventListener('click', swallow, { capture: true, once: true });
+    }
+  }
+
+  previewEl.addEventListener('mousedown', onPointerDown);
+  window.addEventListener('mousemove', onPointerMove);
+  window.addEventListener('mouseup', onPointerUp);
+  previewEl.addEventListener('touchstart', onPointerDown, { passive: true });
+  window.addEventListener('touchmove', onPointerMove, { passive: false });
+  window.addEventListener('touchend', onPointerUp);
+  window.addEventListener('touchcancel', onPointerUp);
 
   window.addEventListener('playlist-duration-changed', ({ detail: { total } }) => {
     playlistTotalDuration = total;
@@ -91,6 +259,12 @@
     audioEl.currentTime = offset || 0;
     audioEl.volume = 1;
     trackLabel.textContent = track.originalName;
+    // For an image (no looping video), the audio element is the only source
+    // of timeupdate events, so the seekbar listens directly to it.
+    audioEl.addEventListener('timeupdate', () => {
+      if (isSeeking) return;
+      updateSeekbar(audioPosition());
+    });
     window.dispatchEvent(new CustomEvent('audio-element-created', { detail: { audioEl } }));
     if (isPlaying) audioEl.play().catch(() => {});
 
@@ -137,13 +311,13 @@
       const resolved = resolveAudioPosition(targetTime);
       if (resolved) {
         playTrackAt(resolved.index, resolved.offset);
-        // Sync video to same relative position within its loop
-        if (playerEl.duration) {
+        // Sync video to same relative position within its loop (no-op for images)
+        if (!isImageMedia() && playerEl.duration) {
           playerEl.currentTime = targetTime % playerEl.duration;
         }
         updateSeekbar(targetTime);
       }
-    } else if (playerEl.duration) {
+    } else if (!isImageMedia() && playerEl.duration) {
       // No audio — just seek video
       playerEl.currentTime = pct * playerEl.duration;
       updateSeekbar(playerEl.currentTime);
@@ -179,11 +353,11 @@
     if (!appState.video) return;
 
     if (isPlaying) {
-      playerEl.pause();
+      if (!isImageMedia()) playerEl.pause();
       if (audioEl) audioEl.pause();
       setPlaying(false);
     } else {
-      playerEl.play().catch(() => {});
+      if (!isImageMedia()) playerEl.play().catch(() => {});
       setPlaying(true);
       if (appState.playlist.length) {
         if (audioEl) {
@@ -203,27 +377,49 @@
     setPlaying(false);
     trackIndex = 0;
     trackStartTime = 0;
+    // New media starts centered; the server reset is mirrored client-side so
+    // the preview matches without waiting on the session round-trip.
+    resetOffset();
 
     dropZone.style.display = 'none';
-    const portrait = previewEl.classList.contains('portrait');
-    previewEl.className = 'video-preview visible' + (portrait ? ' portrait' : '');
-    playerEl.src = `/uploads/video/${info.filename}`;
-    playerEl.pause();
-    playerEl.currentTime = 0;
+    const isImage = info.mediaType === 'image';
+    previewEl.className = 'video-preview visible' + (isImage ? ' is-image' : '');
+    applyStageAspect();
+
+    if (isImage) {
+      imageEl.src = `/uploads/video/${info.filename}`;
+      playerEl.removeAttribute('src');
+      playerEl.load();
+    } else {
+      imageEl.removeAttribute('src');
+      playerEl.src = `/uploads/video/${info.filename}`;
+      playerEl.pause();
+      playerEl.currentTime = 0;
+    }
     updateSeekbar(0);
 
     metaEl.innerHTML = [
       info.width ? `<div class="meta-item">Resolution: <span>${info.width}x${info.height}</span></div>` : '',
-      info.fps ? `<div class="meta-item">FPS: <span>${Math.round(info.fps)}</span></div>` : '',
-      `<div class="meta-item">Duration: <span>${formatDuration(info.duration)}</span></div>`,
+      !isImage && info.fps ? `<div class="meta-item">FPS: <span>${Math.round(info.fps)}</span></div>` : '',
+      isImage
+        ? `<div class="meta-item">Type: <span>Image</span></div>`
+        : `<div class="meta-item">Duration: <span>${formatDuration(info.duration)}</span></div>`,
       `<div class="meta-item">Size: <span>${(info.size / 1024 / 1024).toFixed(1)} MB</span></div>`,
     ].join('');
 
     const warnings = [];
-    if (info.duration < 60) warnings.push('Video is under 1 minute — it will loop many times for long exports.');
-    if (info.height && info.height < 720) warnings.push('Video resolution is below 720p. Output quality may be limited.');
+    if (!isImage && info.duration < 60) warnings.push('Video is under 1 minute — it will loop many times for long exports.');
+    if (info.height && info.height < 720) {
+      warnings.push(isImage
+        ? 'Image resolution is below 720p. Output quality may be limited.'
+        : 'Video resolution is below 720p. Output quality may be limited.');
+    }
     warningEl.style.display = warnings.length ? 'block' : 'none';
     warningEl.textContent = warnings.join(' ');
+
+    // Stage aspect ratio resolves on the next layout pass, after which we can
+    // tell whether there's overflow to drag through.
+    requestAnimationFrame(refreshDraggable);
 
     checkExportReady();
   }
@@ -234,9 +430,14 @@
     trackIndex = 0;
     trackStartTime = 0;
     appState.video = null;
+    resetOffset();
     dropZone.style.display = '';
     previewEl.className = 'video-preview';
-    playerEl.src = '';
+    // Keep the format-driven aspect — empty placeholder uses it too
+    applyStageAspect();
+    playerEl.removeAttribute('src');
+    playerEl.load();
+    imageEl.removeAttribute('src');
     metaEl.innerHTML = '';
     warningEl.style.display = 'none';
     checkExportReady();
@@ -272,9 +473,10 @@
     e.preventDefault();
     dropZone.classList.remove('drag-over');
     const file = e.dataTransfer.files[0];
-    if (file && (file.type.startsWith('video/') || /\.(mp4|mov|mkv|webm|avi)$/i.test(file.name))) {
-      uploadVideo(file);
-    }
+    if (!file) return;
+    const isVideo = file.type.startsWith('video/') || /\.(mp4|mov|mkv|webm|avi)$/i.test(file.name);
+    const isImage = file.type.startsWith('image/') || /\.(jpe?g|png|webp|gif|bmp)$/i.test(file.name);
+    if (isVideo || isImage) uploadVideo(file);
   });
 
   function escHtml(str) {
@@ -283,13 +485,6 @@
 
   window.addEventListener('session-loaded', e => {
     if (e.detail.video) showVideo(e.detail.video);
-    if (e.detail.settings && e.detail.settings.format === 'portrait') {
-      previewEl.classList.add('portrait');
-    }
-  });
-
-  window.addEventListener('format-changed', e => {
-    previewEl.classList.toggle('portrait', e.detail.format === 'portrait');
   });
 
   // visualizer.js asks for the current audio element when viz is enabled mid-playback

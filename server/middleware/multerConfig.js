@@ -4,6 +4,8 @@ const { v4: uuidv4 } = require('uuid');
 
 const AUDIO_MIMES = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/x-wav', 'audio/aac', 'audio/ogg', 'audio/mp4', 'audio/x-m4a'];
 const VIDEO_MIMES = ['video/mp4', 'video/quicktime', 'video/x-matroska', 'video/webm', 'video/x-msvideo'];
+const IMAGE_MIMES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/bmp'];
+const MEDIA_MIMES = [...VIDEO_MIMES, ...IMAGE_MIMES];
 
 function makeStorage(subdir) {
   return multer.diskStorage({
@@ -24,13 +26,15 @@ const audioUpload = multer({
   },
 });
 
+// "videoUpload" historically only accepted videos; it now also accepts still
+// images, which the export pipeline will -loop for the playlist duration.
 const videoUpload = multer({
   storage: makeStorage('video'),
   limits: { fileSize: 4 * 1024 * 1024 * 1024 }, // 4 GB
   fileFilter: (req, file, cb) => {
-    if (VIDEO_MIMES.includes(file.mimetype)) return cb(null, true);
-    cb(new Error(`Unsupported video type: ${file.mimetype}`));
+    if (MEDIA_MIMES.includes(file.mimetype)) return cb(null, true);
+    cb(new Error(`Unsupported media type: ${file.mimetype}`));
   },
 });
 
-module.exports = { audioUpload, videoUpload };
+module.exports = { audioUpload, videoUpload, IMAGE_MIMES, VIDEO_MIMES };

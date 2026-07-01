@@ -14,11 +14,26 @@ function defaultStore() {
       loop: false,
       loopCount: 1, // how many times to play through the playlist (1-10)
       format: 'landscape', // 'landscape' (YouTube 16:9) | 'portrait' (TikTok/Instagram 9:16)
-      visualizer: 'none',   // 'none' | 'waveform' | 'bars' | 'spectrum'
-      vizColor: '#e53935',
-      vizOpacity: 0.6,       // 0.1–1.0
-      vizPosition: 'bottom', // 'bottom' | 'top'
+      visualizer: 'waveform', // 'none' | 'waveform' | 'bars' | 'spectrum'
+      vizColor: '#e5e7eb',
+      vizOpacity: 0.85,      // 0.1–1.0
+      vizPosition: 'bottom', // 'bottom' | 'centered' | 'top' | 'fullscreen'
       vizHeight: 20,         // % of video height (10-50)
+      // Song title / artist overlay (global, applied across whole export)
+      showSongTitle: false,
+      showArtistName: false,
+      songTitle: '',
+      artistName: '',
+      textFont: 'Inter',          // 'Inter' | 'PlayfairDisplay' | 'BebasNeue' | 'Montserrat'
+      textSize: 5,                // % of video height (3-10)
+      textColor: '#ffffff',
+      textPosition: 'bottom',     // 'top' | 'center' | 'bottom'
+      textGlow: 'soft',           // 'off' | 'soft' | 'strong'
+      // Cover-mode pan offsets in [-1, +1]. 0 = centered crop.
+      // Sign convention: +X = image shifted right (shows left side);
+      //                  +Y = image shifted down (shows top side).
+      mediaOffsetX: 0,
+      mediaOffsetY: 0,
     },
     activeJob: null,  // { id, process, stage, percent }
   };

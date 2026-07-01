@@ -31,15 +31,18 @@
   --accent-soft:  rgba(168, 85, 247, 0.15);
   --accent-strong:#9333ea;
 
+  --cyan:         #85FFF3;
+  --cyan-soft:    rgba(133, 255, 243, 0.15);
+
   --pink:         #ec4899;
   --indigo:       #6366f1;
   --green:        #4ade80;
   --yellow:       #facc15;
   --red:          #ef4444;
 
-  --grad-primary: linear-gradient(135deg, #a855f7 0%, #6366f1 100%);
+  --grad-primary: linear-gradient(135deg, #a855f7 0%, #6366f1 55%, #85FFF3 100%);
   --grad-button:  linear-gradient(135deg, #9333ea 0%, #7c3aed 100%);
-  --grad-card:    linear-gradient(180deg, rgba(168,85,247,0.04) 0%, rgba(99,102,241,0.02) 100%);
+  --grad-card:    linear-gradient(180deg, rgba(168,85,247,0.04) 0%, rgba(133,255,243,0.025) 100%);
 
   --radius:       14px;
   --radius-sm:    10px;
@@ -68,16 +71,20 @@
   --accent-soft:  rgba(139, 92, 246, 0.10);
   --accent-strong:#7c3aed;
 
+  --cyan:         #4ad9c9;
+  --cyan-soft:    rgba(74, 217, 201, 0.12);
+
   --shadow:       0 4px 16px rgba(80, 40, 120, 0.10);
   --shadow-glow:  0 10px 30px rgba(139, 92, 246, 0.25);
 
-  --grad-card:    linear-gradient(180deg, rgba(139,92,246,0.05) 0%, rgba(236,72,153,0.02) 100%);
+  --grad-card:    linear-gradient(180deg, rgba(139,92,246,0.05) 0%, rgba(133,255,243,0.03) 100%);
 }
 
 body {
   background:
     radial-gradient(1100px 600px at 12% -8%, rgba(168,85,247,0.10), transparent 60%),
     radial-gradient(900px 500px at 90% 0%, rgba(99,102,241,0.10), transparent 60%),
+    radial-gradient(800px 600px at 75% 110%, rgba(133,255,243,0.08), transparent 60%),
     var(--bg);
   color: var(--text);
   font-family: var(--font);
@@ -343,12 +350,16 @@ body {
   background: #000;
   aspect-ratio: 16 / 9;
 }
-.thumb-wrap video {
+.thumb-wrap video,
+.thumb-wrap img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
 }
+.thumb-wrap img { display: none; }
+.thumb-wrap.is-image video { display: none; }
+.thumb-wrap.is-image img { display: block; }
 .thumb-remove {
   position: absolute;
   top: 8px; right: 8px;
@@ -608,6 +619,32 @@ body {
   color: #fff;
 }
 
+/* New card layout: a wider preview thumbnail above the label */
+.viz-card-preview {
+  width: 100%;
+  aspect-ratio: 2 / 1;
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(0,0,0,0.18), rgba(0,0,0,0.05));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  padding: 6px 8px;
+  transition: all 0.18s;
+  overflow: hidden;
+}
+.viz-card.active .viz-card-preview {
+  background: linear-gradient(180deg, rgba(168,85,247,0.18), rgba(99,102,241,0.10));
+  color: var(--accent-2);
+  box-shadow: inset 0 0 0 1px rgba(168,85,247,0.25);
+}
+.viz-card-preview svg { display: block; }
+.viz-card-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1px;
+}
+
 /* ─── Visualizer options section ──────────────────────── */
 .viz-section {
   border-top: 1px solid var(--border);
@@ -759,6 +796,104 @@ body {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
+}
+.viz-advanced .viz-opts-grid-3 {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+.viz-advanced .viz-opts-grid-2 {
+  padding-top: 0;
+}
+.viz-advanced .viz-subhead-tight {
+  padding: 4px 12px 0;
+  margin-bottom: 0;
+}
+.viz-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 12px 0;
+}
+
+/* Song title / artist toggle + text input rows */
+.text-toggles {
+  display: grid;
+  gap: 8px;
+  padding: 8px 12px 4px;
+}
+.text-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--text);
+  font-weight: 500;
+}
+.text-field {
+  width: 100%;
+  padding: 9px 11px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.text-field:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(168,85,247,0.18);
+}
+.text-field::placeholder { color: var(--text-muted); opacity: 0.7; }
+
+.field-color {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.field-color input[type="color"] {
+  width: 100%;
+  height: 36px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  cursor: pointer;
+}
+
+/* Tight segmented row for inline pickers like Text Position / Glow */
+.seg-row-sm {
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+.seg-row-sm .seg-btn {
+  padding: 7px 4px;
+  font-size: 11.5px;
+}
+
+/* ── Bundled fonts so the preview font matches the export ────────── */
+@font-face {
+  font-family: 'Inter';
+  src: url('/fonts/Inter-Regular.ttf') format('truetype');
+  font-weight: 100 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Playfair Display';
+  src: url('/fonts/PlayfairDisplay-Regular.ttf') format('truetype');
+  font-weight: 100 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Bebas Neue';
+  src: url('/fonts/BebasNeue-Regular.ttf') format('truetype');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Montserrat';
+  src: url('/fonts/Montserrat-Regular.ttf') format('truetype');
+  font-weight: 100 900;
+  font-display: swap;
 }
 
 /* ─── Format cards ────────────────────────────────────── */
@@ -1023,6 +1158,8 @@ input[type="range"]::-moz-range-thumb {
   position: relative;
   width: 100%;
   aspect-ratio: 16 / 9;
+  max-height: 75vh;
+  margin: 0 auto;
   background:
     radial-gradient(60% 60% at 50% 30%, rgba(168,85,247,0.15), transparent 70%),
     #050510;
@@ -1072,14 +1209,28 @@ input[type="range"]::-moz-range-thumb {
   display: none;
 }
 .video-preview.visible { display: block; }
-.video-preview video {
+.video-preview video,
+.video-preview img {
   width: 100%;
   height: 100%;
   display: block;
-  object-fit: contain;
+  /* Cover the canvas so the export matches what's previewed; the visible crop
+     is steered by --offset-x / --offset-y (drag updates them). */
+  object-fit: cover;
+  object-position:
+    calc(50% - var(--offset-x, 0) * 50%)
+    calc(50% - var(--offset-y, 0) * 50%);
   background: #000;
 }
-.video-preview.portrait video { object-fit: contain; }
+.video-preview img { display: none; }
+.video-preview.is-image video { display: none; }
+.video-preview.is-image img { display: block; }
+
+/* When dragging is possible (offset axis has slack), show a grab cursor on
+   the play overlay so users discover the interaction. */
+.video-preview.draggable .preview-play-btn { cursor: grab; }
+.video-preview.dragging .preview-play-btn { cursor: grabbing; }
+.video-preview.dragging .preview-play-btn:hover { background: transparent; }
 
 .video-meta {
   position: absolute;

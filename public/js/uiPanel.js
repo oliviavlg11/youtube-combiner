@@ -47,6 +47,29 @@
     updateSummary();
   });
 
+  // ── Text Position + Glow segmented controls → hidden selects ────────
+  function wireSeg(attr, selectId) {
+    const sel = document.getElementById(selectId);
+    if (!sel) return;
+    const btns = document.querySelectorAll(`[data-${attr}]`);
+    btns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const val = btn.dataset[toCamel(attr)];
+        btns.forEach(b => b.classList.toggle('active', b === btn));
+        if (sel.value !== val) {
+          sel.value = val;
+          sel.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      });
+    });
+    sel.addEventListener('change', () => {
+      btns.forEach(b => b.classList.toggle('active', b.dataset[toCamel(attr)] === sel.value));
+    });
+  }
+  function toCamel(kebab) { return kebab.replace(/-([a-z])/g, (_, c) => c.toUpperCase()); }
+  wireSeg('text-pos', 'text-position');
+  wireSeg('text-glow', 'text-glow');
+
   // ── Color style swatches → #viz-color ────────────────────────────────
   const swatches = document.querySelectorAll('.swatch');
   const vizColor = document.getElementById('viz-color');
@@ -153,7 +176,10 @@
 
   // ── Step 1 thumbnail mirrors the main player ─────────────────────────
   const thumbRow = document.getElementById('thumb-row');
+  const thumbWrap = thumbRow.querySelector('.thumb-wrap');
   const thumbVideo = document.getElementById('thumb-video');
+  const thumbImage = document.getElementById('thumb-image');
+  const thumbPlay = thumbRow.querySelector('.thumb-play');
   const thumbRemoveBtn = document.getElementById('thumb-remove-btn');
   const videoDropZone = document.getElementById('video-drop-zone');
   const previewEmpty = document.getElementById('preview-empty');
@@ -163,12 +189,25 @@
     if (appState.video && appState.video.filename) {
       thumbRow.classList.add('visible');
       videoDropZone.style.display = 'none';
-      thumbVideo.src = `/uploads/video/${appState.video.filename}`;
+      const isImage = appState.video.mediaType === 'image';
+      thumbWrap.classList.toggle('is-image', isImage);
+      if (isImage) {
+        thumbImage.src = `/uploads/video/${appState.video.filename}`;
+        thumbVideo.removeAttribute('src');
+      } else {
+        thumbVideo.src = `/uploads/video/${appState.video.filename}`;
+        thumbImage.removeAttribute('src');
+      }
+      // The play-icon hint is for video looping — hide it on a still image.
+      if (thumbPlay) thumbPlay.style.display = isImage ? 'none' : '';
       previewEmpty.classList.add('hidden');
     } else {
       thumbRow.classList.remove('visible');
       videoDropZone.style.display = '';
-      thumbVideo.src = '';
+      thumbWrap.classList.remove('is-image');
+      thumbVideo.removeAttribute('src');
+      thumbImage.removeAttribute('src');
+      if (thumbPlay) thumbPlay.style.display = '';
       previewEmpty.classList.remove('hidden');
     }
   }
@@ -204,9 +243,11 @@
     const loops = loopToggle && loopToggle.checked ? loopCount : 1;
     sLoops.textContent = `${loops} time${loops === 1 ? '' : 's'}`;
 
-    const vizName = capitalize(vizSelect.value || 'none');
-    const posName = capitalize(posSelect.value || 'bottom');
-    sViz.textContent = vizSelect.value === 'none' ? 'None' : `${vizName} (${posName})`;
+    const VIZ_LABELS = { none: 'None', waveform: 'Elegant Waveform', bars: 'Thin Bars', spectrum: 'Smooth Spectrum' };
+    const POS_LABELS = { bottom: 'Bottom', centered: 'Center', top: 'Top', fullscreen: 'Full Screen' };
+    const vizName = VIZ_LABELS[vizSelect.value] || capitalize(vizSelect.value);
+    const posName = POS_LABELS[posSelect.value] || capitalize(posSelect.value);
+    sViz.textContent = vizSelect.value === 'none' ? 'None' : `${vizName} · ${posName}`;
 
     const activeFmt = document.querySelector('.format-tab.active');
     if (activeFmt) {

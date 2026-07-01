@@ -16,7 +16,8 @@
         <defs>
           <linearGradient id="lvg" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0%" stop-color="#a855f7"/>
-            <stop offset="100%" stop-color="#6366f1"/>
+            <stop offset="55%" stop-color="#6366f1"/>
+            <stop offset="100%" stop-color="#85FFF3"/>
           </linearGradient>
         </defs>
         <rect x="2"  y="14" width="3" height="10" rx="1.2" fill="url(#lvg)"/>
@@ -61,33 +62,34 @@
   <!-- LEFT: numbered step cards -->
   <div class="steps-column">
 
-    <!-- Step 1: Add Video -->
+    <!-- Step 1: Add Video or Image -->
     <section class="step-card" id="step-video">
       <div class="step-head">
         <div class="step-num">1</div>
         <div class="step-titles">
-          <div class="step-title">Add Video</div>
-          <div class="step-sub">Upload any video</div>
+          <div class="step-title">Add Video or Image</div>
+          <div class="step-sub">Upload a video to loop, or an image to hold steady</div>
         </div>
-        <button class="step-help" title="Drop a video file. It will loop automatically until your music ends.">?</button>
+        <button class="step-help" title="Drop a video file (it loops) or an image (it stays steady until your music ends).">?</button>
       </div>
 
       <div class="drop-zone" id="video-drop-zone">
-        <input type="file" id="video-input" accept=".mp4,.mov,.mkv,.webm,.avi">
+        <input type="file" id="video-input" accept=".mp4,.mov,.mkv,.webm,.avi,.jpg,.jpeg,.png,.webp,.gif,.bmp">
         <div class="drop-icon">
           <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <polygon points="23 7 16 12 23 17 23 7"/>
             <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
           </svg>
         </div>
-        <strong class="drop-text-desktop">Drop video file here</strong>
+        <strong class="drop-text-desktop">Drop video or image here</strong>
         <strong class="drop-text-mobile">Tap to browse</strong>
-        <p>MP4, MOV, MKV, WebM</p>
+        <p>MP4, MOV, MKV, WebM &middot; JPG, PNG, WebP, GIF</p>
       </div>
 
       <div class="thumb-row" id="thumb-row">
         <div class="thumb-wrap">
           <video id="thumb-video" muted playsinline></video>
+          <img id="thumb-image" alt="">
           <button class="thumb-remove" id="thumb-remove-btn" title="Remove">&times;</button>
           <div class="thumb-play"><span>&#9654;</span></div>
         </div>
@@ -162,49 +164,62 @@
       <!-- Hidden select drives the existing JS; visible cards update it -->
       <select id="viz-type" class="sr-only" aria-hidden="true">
         <option value="none">None</option>
-        <option value="waveform" selected>Waveform</option>
-        <option value="bars">Bars</option>
-        <option value="spectrum">Spectrum</option>
+        <option value="waveform" selected>Elegant Waveform</option>
+        <option value="bars">Thin Bars</option>
+        <option value="spectrum">Smooth Spectrum</option>
       </select>
 
       <div class="viz-grid" role="radiogroup" aria-label="Visualizer type">
         <button type="button" class="viz-card" data-viz="none" role="radio" aria-checked="false">
-          <span class="viz-card-icon">
-            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="9"/>
-              <line x1="5" y1="19" x2="19" y2="5"/>
+          <span class="viz-card-preview viz-preview-none">
+            <svg viewBox="0 0 60 30" width="100%" height="100%" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
+              <line x1="10" y1="6" x2="50" y2="24" opacity="0.5"/>
+              <line x1="50" y1="6" x2="10" y2="24" opacity="0.5"/>
             </svg>
           </span>
-          None
+          <span class="viz-card-label">None</span>
         </button>
         <button type="button" class="viz-card active" data-viz="waveform" role="radio" aria-checked="true">
-          <span class="viz-card-icon">
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M2 12c2-4 4-4 6 0s4 4 6 0 4-4 6 0 4 4 6 0"/>
+          <span class="viz-card-preview viz-preview-wave">
+            <svg viewBox="0 0 60 30" width="100%" height="100%" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 15 Q 7 5, 12 15 T 22 15 T 32 15 T 42 15 T 52 15 T 58 15"/>
             </svg>
           </span>
-          Waveform
+          <span class="viz-card-label">Elegant Waveform</span>
         </button>
         <button type="button" class="viz-card" data-viz="bars" role="radio" aria-checked="false">
-          <span class="viz-card-icon">
-            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="4"  y1="18" x2="4"  y2="10"/>
-              <line x1="9"  y1="18" x2="9"  y2="4"/>
-              <line x1="14" y1="18" x2="14" y2="8"/>
-              <line x1="19" y1="18" x2="19" y2="12"/>
+          <span class="viz-card-preview viz-preview-bars">
+            <svg viewBox="0 0 60 30" width="100%" height="100%">
+              <g fill="currentColor">
+                <rect x="6"  y="18" width="1.5" height="9" rx="0.6"/>
+                <rect x="11" y="12" width="1.5" height="15" rx="0.6"/>
+                <rect x="16" y="16" width="1.5" height="11" rx="0.6"/>
+                <rect x="21" y="8"  width="1.5" height="19" rx="0.6"/>
+                <rect x="26" y="14" width="1.5" height="13" rx="0.6"/>
+                <rect x="31" y="10" width="1.5" height="17" rx="0.6"/>
+                <rect x="36" y="6"  width="1.5" height="21" rx="0.6"/>
+                <rect x="41" y="13" width="1.5" height="14" rx="0.6"/>
+                <rect x="46" y="17" width="1.5" height="10" rx="0.6"/>
+                <rect x="51" y="20" width="1.5" height="7"  rx="0.6"/>
+              </g>
             </svg>
           </span>
-          Bars
+          <span class="viz-card-label">Thin Bars</span>
         </button>
         <button type="button" class="viz-card" data-viz="spectrum" role="radio" aria-checked="false">
-          <span class="viz-card-icon">
-            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="9"/>
-              <circle cx="12" cy="12" r="5"/>
-              <circle cx="12" cy="12" r="1.5"/>
+          <span class="viz-card-preview viz-preview-spectrum">
+            <svg viewBox="0 0 60 30" width="100%" height="100%">
+              <defs>
+                <linearGradient id="spec-grad" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%"  stop-color="#4fc3f7"/>
+                  <stop offset="50%" stop-color="currentColor"/>
+                  <stop offset="100%" stop-color="#ab47bc"/>
+                </linearGradient>
+              </defs>
+              <path d="M2 28 Q 8 16, 14 22 T 26 18 T 38 14 T 50 20 T 58 24 L58 28 Z" fill="url(#spec-grad)" opacity="0.75"/>
             </svg>
           </span>
-          Spectrum
+          <span class="viz-card-label">Smooth Spectrum</span>
         </button>
       </div>
 
@@ -266,14 +281,88 @@
 
         <details class="viz-advanced">
           <summary>Advanced visualizer options</summary>
+
           <div class="viz-opts-grid">
             <div class="field">
-              <label>Opacity: <span id="viz-opacity-label">60%</span></label>
-              <input type="range" id="viz-opacity" min="10" max="100" step="5" value="60">
+              <label>Opacity: <span id="viz-opacity-label">85%</span></label>
+              <input type="range" id="viz-opacity" min="10" max="100" step="5" value="85">
             </div>
             <div class="field">
               <label>Height: <span id="viz-height-label">20%</span></label>
               <input type="range" id="viz-height" min="10" max="50" step="5" value="20">
+            </div>
+          </div>
+
+          <div class="viz-divider"></div>
+
+          <div class="viz-subhead viz-subhead-tight">Song title &amp; artist</div>
+
+          <div class="text-toggles">
+            <label class="text-toggle-row">
+              <span>Show song title</span>
+              <label class="toggle">
+                <input type="checkbox" id="show-song-title">
+                <span class="toggle-slider"></span>
+              </label>
+            </label>
+            <input type="text" id="song-title-input" class="text-field" placeholder="Song title (e.g. Midnight Drive)" maxlength="80">
+
+            <label class="text-toggle-row">
+              <span>Show artist name</span>
+              <label class="toggle">
+                <input type="checkbox" id="show-artist-name">
+                <span class="toggle-slider"></span>
+              </label>
+            </label>
+            <input type="text" id="artist-name-input" class="text-field" placeholder="Artist name" maxlength="60">
+          </div>
+
+          <div class="viz-opts-grid viz-opts-grid-3">
+            <div class="field">
+              <label>Font</label>
+              <select id="text-font">
+                <option value="Inter" selected>Inter — Modern</option>
+                <option value="PlayfairDisplay">Playfair — Elegant</option>
+                <option value="BebasNeue">Bebas — Bold</option>
+                <option value="Montserrat">Montserrat — Friendly</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Size: <span id="text-size-label">5%</span></label>
+              <input type="range" id="text-size" min="3" max="10" step="0.5" value="5">
+            </div>
+            <div class="field field-color">
+              <label>Color</label>
+              <input type="color" id="text-color" value="#ffffff">
+            </div>
+          </div>
+
+          <div class="viz-opts-grid viz-opts-grid-2">
+            <div class="field">
+              <label>Position</label>
+              <div class="seg-row seg-row-sm" role="radiogroup" aria-label="Text position">
+                <button type="button" class="seg-btn" data-text-pos="top">Top</button>
+                <button type="button" class="seg-btn" data-text-pos="center">Center</button>
+                <button type="button" class="seg-btn active" data-text-pos="bottom">Bottom</button>
+              </div>
+              <select id="text-position" class="sr-only">
+                <option value="top">Top</option>
+                <option value="center">Center</option>
+                <option value="bottom" selected>Bottom</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Glow</label>
+              <div class="seg-row seg-row-sm" role="radiogroup" aria-label="Text glow">
+                <button type="button" class="seg-btn" data-text-glow="off">Off</button>
+                <button type="button" class="seg-btn active" data-text-glow="soft">Soft</button>
+                <button type="button" class="seg-btn" data-text-glow="strong">Strong</button>
+              </div>
+              <select id="text-glow" class="sr-only">
+                <option value="off">Off</option>
+                <option value="soft" selected>Soft</option>
+                <option value="strong">Strong</option>
+              </select>
             </div>
           </div>
         </details>
@@ -404,6 +493,7 @@
         <div class="video-preview" id="video-preview">
           <button class="video-remove" id="video-remove-btn">&times;</button>
           <video id="video-player" loop muted playsinline></video>
+          <img id="image-player" alt="">
           <canvas id="viz-canvas" class="viz-canvas"></canvas>
           <div class="preview-play-btn" id="preview-play-btn">
             <span id="preview-play-icon">&#9654;</span>

@@ -20,6 +20,18 @@
   const vizOpacityRange = document.getElementById('viz-opacity');
   const vizOpacityLabel = document.getElementById('viz-opacity-label');
 
+  // Text overlay controls (inside the Advanced accordion)
+  const showSongTitleEl   = document.getElementById('show-song-title');
+  const showArtistNameEl  = document.getElementById('show-artist-name');
+  const songTitleInput    = document.getElementById('song-title-input');
+  const artistNameInput   = document.getElementById('artist-name-input');
+  const textFontSel       = document.getElementById('text-font');
+  const textSizeRange     = document.getElementById('text-size');
+  const textSizeLabel     = document.getElementById('text-size-label');
+  const textColorInput    = document.getElementById('text-color');
+  const textPositionSel   = document.getElementById('text-position');
+  const textGlowSel       = document.getElementById('text-glow');
+
   const STAGE_LABELS = {
     starting: 'Starting...',
     concat_audio: 'Encoding audio...',
@@ -109,28 +121,44 @@
   });
   vizPositionSel.addEventListener('change', () => { dispatchVizChanged(); saveSettings(); });
 
-  function saveSettings() {
-    fetch('/api/session/settings', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        resolution: resolutionSel.value,
-        fps: Number(fpsSel.value),
-        videoBitrate: `${vbitrateRange.value}k`,
-        audioBitrate: audioBitrateSel.value,
-        useHardwareAccel: hwAccelToggle.checked,
-        format: currentFormat,
-        visualizer: vizTypeSel.value,
-        vizColor: vizColorInput.value,
-        vizOpacity: vizOpacityRange.value / 100,
-        vizPosition: vizPositionSel.value,
-        vizHeight: Number(vizHeightRange.value),
-      }),
-    }).catch(() => {});
+  // ── Text overlay wiring ──────────────────────────────────────────────
+  function dispatchTextChanged() {
+    window.dispatchEvent(new CustomEvent('viz-text-changed', {
+      detail: {
+        showSongTitle: showSongTitleEl.checked,
+        showArtistName: showArtistNameEl.checked,
+        songTitle: songTitleInput.value,
+        artistName: artistNameInput.value,
+        textFont: textFontSel.value,
+        textSize: Number(textSizeRange.value),
+        textColor: textColorInput.value,
+        textPosition: textPositionSel.value,
+        textGlow: textGlowSel.value,
+      },
+    }));
   }
 
-  // Expose current settings for preset saving
-  appState.getSettings = function() {
+  showSongTitleEl.addEventListener('change', () => { dispatchTextChanged(); saveSettings(); });
+  showArtistNameEl.addEventListener('change', () => { dispatchTextChanged(); saveSettings(); });
+  songTitleInput.addEventListener('input',    () => { dispatchTextChanged(); saveSettingsDebounced(); });
+  artistNameInput.addEventListener('input',   () => { dispatchTextChanged(); saveSettingsDebounced(); });
+  textFontSel.addEventListener('change',      () => { dispatchTextChanged(); saveSettings(); });
+  textSizeRange.addEventListener('input', () => {
+    textSizeLabel.textContent = `${textSizeRange.value}%`;
+    dispatchTextChanged();
+    saveSettingsDebounced();
+  });
+  textColorInput.addEventListener('input',    () => { dispatchTextChanged(); saveSettingsDebounced(); });
+  textPositionSel.addEventListener('change',  () => { dispatchTextChanged(); saveSettings(); });
+  textGlowSel.addEventListener('change',      () => { dispatchTextChanged(); saveSettings(); });
+
+  let saveTimer = null;
+  function saveSettingsDebounced() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(saveSettings, 250);
+  }
+
+  function collectSettings() {
     return {
       resolution: resolutionSel.value,
       fps: Number(fpsSel.value),
@@ -143,8 +171,28 @@
       vizOpacity: vizOpacityRange.value / 100,
       vizPosition: vizPositionSel.value,
       vizHeight: Number(vizHeightRange.value),
+      showSongTitle: showSongTitleEl.checked,
+      showArtistName: showArtistNameEl.checked,
+      songTitle: songTitleInput.value,
+      artistName: artistNameInput.value,
+      textFont: textFontSel.value,
+      textSize: Number(textSizeRange.value),
+      textColor: textColorInput.value,
+      textPosition: textPositionSel.value,
+      textGlow: textGlowSel.value,
     };
-  };
+  }
+
+  function saveSettings() {
+    fetch('/api/session/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(collectSettings()),
+    }).catch(() => {});
+  }
+
+  // Expose current settings for preset saving
+  appState.getSettings = collectSettings;
 
   // Start export
   exportBtn.addEventListener('click', async () => {
@@ -386,7 +434,29 @@
       vizHeightRange.value = s.vizHeight;
       vizHeightLabel.textContent = `${s.vizHeight}%`;
     }
+    // Text overlay restore
+    if (s.showSongTitle !== undefined)  showSongTitleEl.checked  = !!s.showSongTitle;
+    if (s.showArtistName !== undefined) showArtistNameEl.checked = !!s.showArtistName;
+    if (typeof s.songTitle === 'string')  songTitleInput.value  = s.songTitle;
+    if (typeof s.artistName === 'string') artistNameInput.value = s.artistName;
+    if (s.textFont) textFontSel.value = s.textFont;
+    if (typeof s.textSize === 'number') {
+      textSizeRange.value = s.textSize;
+      textSizeLabel.textContent = `${s.textSize}%`;
+    }
+    if (s.textColor) textColorInput.value = s.textColor;
+    if (s.textPosition) {
+      textPositionSel.value = s.textPosition;
+      document.querySelectorAll('[data-text-pos]').forEach(b =>
+        b.classList.toggle('active', b.dataset.textPos === s.textPosition));
+    }
+    if (s.textGlow) {
+      textGlowSel.value = s.textGlow;
+      document.querySelectorAll('[data-text-glow]').forEach(b =>
+        b.classList.toggle('active', b.dataset.textGlow === s.textGlow));
+    }
     dispatchVizChanged();
+    dispatchTextChanged();
   }
 
   // Load preset
